@@ -11,10 +11,7 @@ if (length(instalar) > 0) install.packages(instalar)
 
 lapply(packages, library, character.only = TRUE)
 
-############################################
-## 2. PERFIL FICTÍCIO – PARTICIPANTES NEXUS
-############################################
-############################################
+
 ## PACOTES
 ############################################
 library(shiny)
@@ -35,7 +32,7 @@ library(lubridate)
 library(shinycssloaders)
 
 ############################################
-## DADOS FICTÍCIOS – NEXUS
+## DADOS NEXUS
 ############################################
 
 Seleccionados_Monapo <- read_excel("Seleccionados Monapo.xlsx")

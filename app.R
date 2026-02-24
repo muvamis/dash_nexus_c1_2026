@@ -201,6 +201,11 @@ ui <- navbarPage(
         sidebarLayout(
           sidebarPanel(
             selectInput(
+              "distritoInput_",
+              "Distrito:",
+              choices = c("TODOS", unique(Presencas_Nexus$Distrito))
+            ),
+            selectInput(
               "comunidadeAcompanhamento",
               "Comunidade:",
               choices = c("TODAS", unique(Presencas_Nexus$Comunidade))
@@ -815,100 +820,123 @@ server <- function(input, output, session){
     })
     
     ################################ ACOMPANHAMENTO ################################## 
-    # 1️⃣ Atualiza opções do facilitador com base na comunidade selecionada
-    observeEvent(input$comunidadeAcompanhamento, {
-      df <- Presencas_Nexus  # ⚠️ usar a base correta
+    # 🔹 Atualizar COMUNIDADE a partir do DISTRITO
+    observeEvent(input$distritoInput_, {
+      df <- Presencas_Nexus
       
-      if (input$comunidadeAcompanhamento == "TODAS") {
-        facilitadores_filtrados <- sort(unique(df$Facilitadores))
+      comunidades_filtradas <- if (input$distritoInput_ == "TODOS") {
+        sort(unique(df$Comunidade))
       } else {
-        facilitadores_filtrados <- sort(unique(df$Facilitadores[df$Comunidade == input$comunidadeAcompanhamento]))
+        sort(unique(df$Comunidade[df$Distrito == input$distritoInput_]))
       }
       
       updateSelectInput(
         session,
-        "facilitadorInput",
-        choices = c("TODOS", facilitadores_filtrados),
-        selected = "TODOS"
+        "comunidadeAcompanhamento",
+        choices = c("TODAS", comunidades_filtradas),
+        selected = "TODAS"
       )
     })
     
-    # 2️⃣ Função para formatar os pontos de presença
+    # 🔹 Atualizar FACILITADOR a partir de DISTRITO + COMUNIDADE
+    observeEvent(
+      list(input$distritoInput_, input$comunidadeAcompanhamento),
+      {
+        df <- Presencas_Nexus
+        
+        if (input$distritoInput_ != "TODOS") {
+          df <- df %>% filter(Distrito == input$distritoInput_)
+        }
+        
+        if (input$comunidadeAcompanhamento != "TODAS") {
+          df <- df %>% filter(Comunidade == input$comunidadeAcompanhamento)
+        }
+        
+        facilitadores_filtrados <- sort(unique(df$Facilitadores))
+        
+        updateSelectInput(
+          session,
+          "facilitadorInput",
+          choices = c("TODOS", facilitadores_filtrados),
+          selected = "TODOS"
+        )
+      },
+      ignoreInit = TRUE
+    )
+    
+    # 🔹 Função para formatar presença
     formatar_pontos <- function(x) {
       sapply(x, function(valor) {
-        if (is.na(valor) || valor == "" || is.null(valor)) {
+        if (is.na(valor) || valor == "") {
           '<span style="color: grey; font-size: 40px;">&#9679;</span>'
         } else if (valor == "Presente") {
           '<span style="color: purple; font-size: 40px;">&#9679;</span>'
         } else if (valor == "Ausente") {
           '<span style="color: red; font-size: 40px;">&#9679;</span>'
         } else {
-          # Caso padrão para valores inesperados
           '<span style="color: grey; font-size: 40px;">&#9679;</span>'
         }
       })
     }
     
-    
     # 🔹 Detectar e ordenar colunas de sessões
     col_sessoes <- names(Presencas_Nexus)[grepl("^Sessão_?\\d+$", names(Presencas_Nexus))]
     col_sessoes_ordenadas <- col_sessoes[order(as.numeric(gsub("Sessão_?", "", col_sessoes)))]
     
-    # 3️⃣ Dados filtrados reativos (ordenando as sessões)
+    # 🔹 Dados filtrados
     dados_filtered <- reactive({
       df <- Presencas_Nexus
       
-      # Filtrar comunidade
-      if (!is.null(input$comunidadeAcompanhamento) && input$comunidadeAcompanhamento != "TODAS") {
+      if (input$distritoInput_ != "TODOS") {
+        df <- df %>% filter(Distrito == input$distritoInput_)
+      }
+      
+      if (input$comunidadeAcompanhamento != "TODAS") {
         df <- df %>% filter(Comunidade == input$comunidadeAcompanhamento)
       }
       
-      # Filtrar facilitador
-      if (!is.null(input$facilitadorInput) && input$facilitadorInput != "TODOS") {
+      if (input$facilitadorInput != "TODOS") {
         df <- df %>% filter(Facilitadores == input$facilitadorInput)
       }
       
-      # Colunas de sessões ordenadas
       df <- df[, c(setdiff(names(df), col_sessoes_ordenadas), col_sessoes_ordenadas)]
       
-      # Remover participantes sem presença
       df <- df[rowSums(df[col_sessoes_ordenadas] == "Presente", na.rm = TRUE) > 0, ]
       
       df
     })
     
-    # Legenda visual
+    # 🔹 Legenda visual
     output$pontosPresenca <- renderUI({
-      tagList(
-        HTML(paste0(
+      HTML(
+        paste0(
           '<span style="color: purple; font-size: 25px;">&#9679;</span> Presente &nbsp;&nbsp;',
           '<span style="color: red; font-size: 25px;">&#9679;</span> Ausente &nbsp;&nbsp;',
           '<span style="color: grey; font-size: 25px;">&#9679;</span> Não Preenchido'
-        ))
+        )
       )
     })
     
-    # 5️⃣ Renderização da tabela com sessões ordenadas
+    # 🔹 Tabela
     output$tabelaPresencas <- renderDataTable({
       df <- dados_filtered()
       
-      # Aplicar a formatação visual
       df[col_sessoes_ordenadas] <- lapply(df[col_sessoes_ordenadas], as.character)
       df[col_sessoes_ordenadas] <- lapply(df[col_sessoes_ordenadas], formatar_pontos)
       
-      col_display <- c("Comunidade", "Nome_participante", col_sessoes_ordenadas)
-      
       datatable(
-        df[, col_display],
+        df[, c("Comunidade", "Nome_participante", col_sessoes_ordenadas)],
         escape = FALSE,
         rownames = FALSE,
         options = list(
           pageLength = 10,
-          dom = 'lfrtip',
-          columnDefs = list(list(className = 'dt-center', targets = "_all"))
+          dom = "lfrtip",
+          columnDefs = list(list(className = "dt-center", targets = "_all"))
         )
       )
     })
+
+
     
     
 #   
