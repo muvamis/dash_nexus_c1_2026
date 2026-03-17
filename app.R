@@ -340,18 +340,18 @@ server <- function(input, output, session){
   })
   
   
+  # GRÁFICO DISTRITO – PERCENTUAL GERAL
   output$grafico_distrito <- renderPlotly({
     
     df <- dados_filtrados() %>%
       count(Situacao_Participante, Sexo) %>%
-      group_by(Situacao_Participante) %>%
-      mutate(
-        total_col = sum(n),
-        perc = round(n / total_col * 100, 1),
-        label = paste0(n, " (", perc, "%)")
-      ) %>%
       ungroup() %>%
-      mutate(Sexo = factor(Sexo, levels = c("Feminino","Masculino")))
+      mutate(
+        total_geral = sum(n),  # soma geral de todos os participantes
+        perc = round(n / total_geral * 100, 1),
+        label = paste0(n, " (", perc, "%)"),
+        Sexo = factor(Sexo, levels = c("Feminino","Masculino"))
+      )
     
     plot_ly(
       df,
@@ -376,22 +376,18 @@ server <- function(input, output, session){
       )
   })
   
-  
-  
-  
-  # GRÁFICO NEGÓCIO – EMPILHADO POR SEXO COM LABELS FORÇADAS
+  # GRÁFICO NEGÓCIO – PERCENTUAL GERAL
   output$grafico_Negocio <- renderPlotly({
     
     df <- dados_filtrados() %>%
       count(Tem_Negocio, Sexo) %>%
-      group_by(Tem_Negocio) %>%
-      mutate(
-        total_col = sum(n),
-        perc = round(n / total_col * 100, 1),
-        label = paste0(n, " (", perc, "%)")
-      ) %>%
       ungroup() %>%
-      mutate(Sexo = factor(Sexo, levels = c("Feminino","Masculino")))
+      mutate(
+        total_geral = sum(n),  # soma geral de todos os participantes
+        perc = round(n / total_geral * 100, 1),
+        label = paste0(n, " (", perc, "%)"),
+        Sexo = factor(Sexo, levels = c("Feminino","Masculino"))
+      )
     
     plot_ly(
       df,
@@ -416,19 +412,18 @@ server <- function(input, output, session){
       )
   })
   
-  # GRÁFICO POUPANÇA – EMPILHADO POR SEXO COM LABELS FORÇADAS
+  # GRÁFICO POUPANÇA – PERCENTUAL GERAL
   output$grafico_Poupa <- renderPlotly({
     
     df <- dados_filtrados() %>%
       count(Faz_Poupanca, Sexo) %>%
-      group_by(Faz_Poupanca) %>%
-      mutate(
-        total_col = sum(n),
-        perc = round(n / total_col * 100, 1),
-        label = paste0(n, " (", perc, "%)")
-      ) %>%
       ungroup() %>%
-      mutate(Sexo = factor(Sexo, levels = c("Feminino","Masculino")))
+      mutate(
+        total_geral = sum(n),
+        perc = round(n / total_geral * 100, 1),
+        label = paste0(n, " (", perc, "%)"),
+        Sexo = factor(Sexo, levels = c("Feminino","Masculino"))
+      )
     
     plot_ly(
       df,
@@ -439,7 +434,7 @@ server <- function(input, output, session){
       type = "bar",
       text = ~label,
       textposition = "auto",
-      textfont = list(size=14, color="white"),
+      textfont = list(size=14, color="black"),
       hoverinfo = "y+text+name"
     ) %>%
       layout(
@@ -453,8 +448,7 @@ server <- function(input, output, session){
       )
   })
   
-  #############
-  
+  # GRÁFICO ESCOLARIDADE – PERCENTUAL GERAL
   output$grafico_Escolaridade <- renderPlotly({
     
     req(dados_filtrados())
@@ -462,49 +456,33 @@ server <- function(input, output, session){
     df <- dados_filtrados() %>%
       filter(!is.na(Nivil_Educacao), !is.na(Sexo)) %>%
       count(Nivil_Educacao, Sexo) %>%
-      group_by(Nivil_Educacao) %>%
-      mutate(
-        total_col = sum(n),
-        perc  = round(n / total_col * 100, 1),
-        label = paste0(n, " (", perc, "%)")
-      ) %>%
       ungroup() %>%
       mutate(
+        total_geral = sum(n),
+        perc  = round(n / total_geral * 100, 1),
+        label = paste0(n, " (", perc, "%)"),
         Sexo = factor(Sexo, levels = c("Feminino", "Masculino")),
         Nivil_Educacao = factor(
           Nivil_Educacao,
           levels = c(
-            "Nenhum",
-            "Ensino primário",
-            "7a classe",
-            "8a classe",
-            "9a classe",
-            "10a classe",
-            "11a classe",
-            "12a classe",
-            "Ensino técnico médio"
+            "Nenhum","Ensino primário","7a classe","8a classe","9a classe",
+            "10a classe","11a classe","12a classe","Ensino técnico médio"
           )
         )
       )
     
-    validate(
-      need(nrow(df) > 0,
-           "Sem dados de escolaridade para os filtros selecionados.")
-    )
+    validate(need(nrow(df) > 0, "Sem dados de escolaridade para os filtros selecionados."))
     
     plot_ly(
-      data  = df,
-      x     = ~Nivil_Educacao,
-      y     = ~n,
+      df,
+      x = ~Nivil_Educacao,
+      y = ~n,
       color = ~Sexo,
-      colors = c(
-        "Feminino"  = "#9442d4",
-        "Masculino" = "#f77333"
-      ),
+      colors = c("Feminino"  = "#9442d4", "Masculino" = "#f77333"),
       type = "bar",
       text = ~label,
       textposition = "auto",
-      textfont = list(size = 14, color = "white"),
+      textfont = list(size = 14, color = "black"),
       hovertemplate = paste(
         "<b>%{x}</b><br>",
         "Sexo: %{color}<br>",
@@ -518,17 +496,12 @@ server <- function(input, output, session){
         showlegend = TRUE,
         paper_bgcolor = "#f5f3f4",
         plot_bgcolor  = "#f5f3f4",
-        xaxis = list(
-          title = "",
-          tickangle = -20
-        ),
-        yaxis = list(
-          title = "Número de participantes"
-        )
+        xaxis = list(title = "", tickangle = -20),
+        yaxis = list(title = "Número de participantes")
       )
   })
   
-  
+  # GRÁFICO ESTADO CIVIL – PERCENTUAL GERAL
   output$grafico_Estado_Civil <- renderPlotly({
     
     req(dados_filtrados())
@@ -536,38 +509,28 @@ server <- function(input, output, session){
     df <- dados_filtrados() %>%
       filter(!is.na(Estado_Civil), !is.na(Sexo)) %>%
       count(Estado_Civil, Sexo) %>%
+      ungroup() %>%
       mutate(
+        total_geral = sum(n),
+        perc = round(n / total_geral * 100, 1),
+        label = paste0(n, " (", perc, "%)"),
         Estado_Civil = factor(
           Estado_Civil,
-          levels = c(
-            "Solteria/o",
-            "Casada/o",
-            "União marital",
-            "Divorciada/Separado(a)",
-            "Viuva"
-          )
+          levels = c("Solteria/o","Casada/o","União marital","Divorciada/Separado(a)","Viuva")
         ),
-        Sexo = factor(Sexo, levels = c("Feminino", "Masculino")),
-        perc = round(n / sum(n) * 100, 1),
-        label = paste0(n, " (", perc, "%)")
+        Sexo = factor(Sexo, levels = c("Feminino", "Masculino"))
       )
     
-    # Cores para o sexo
-    cores_sexo <- c(
-      "Feminino" = "#9442d4",
-      "Masculino" = "#f77333"
-    )
-    
     plot_ly(
-      data = df,
+      df,
       x = ~Estado_Civil,
       y = ~n,
       color = ~Sexo,
-      colors = cores_sexo,
+      colors = c("Feminino" = "#9442d4", "Masculino" = "#f77333"),
       type = "bar",
       text = ~label,
       textposition = "auto",
-      textfont = list(size = 14, color = "white"),
+      textfont = list(size = 14, color = "black"),
       hovertemplate = paste(
         "<b>%{x}</b><br>",
         "Sexo: %{color}<br>",
@@ -580,7 +543,7 @@ server <- function(input, output, session){
         title = "",
         showlegend = TRUE,
         paper_bgcolor = "#f5f3f4",
-        plot_bgcolor = "#f5f3f4",
+        plot_bgcolor  = "#f5f3f4",
         xaxis = list(title = ""),
         yaxis = list(title = "Número de participantes")
       )

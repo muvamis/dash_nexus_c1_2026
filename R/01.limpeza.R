@@ -216,7 +216,49 @@ sessao_cols <- names(Presencas_Nexus)[grepl("^Sessão_?\\d+$", names(Presencas_N
 
 sessao_cols_ordenadas <- sessao_cols[order(as.numeric(gsub("Sessão_?", "", sessao_cols)))]
 
+table(Perfil_NEXUS$tipo_neg)
 
+library(dplyr)
+library(stringr)
+
+Perfil_NEXUS <- Perfil_NEXUS %>%
+  mutate(tipo_neg_pad = str_to_upper(tipo_neg)) %>%  # transforma tudo em maiúsculas
+  mutate(tipo_neg_pad = str_trim(tipo_neg_pad)) %>%  # remove espaços extras
+  # padronização por palavras-chave
+  mutate(tipo_neg_pad = case_when(
+    
+    str_detect(tipo_neg_pad, "AGENTE.*EMOLA|AGENTE.*CONTA MOVEL|AGENTE E-MOLA|AGENTES E-MOLA") ~ "AGENTE EMOLA",
+    
+    str_detect(tipo_neg_pad, "ALFAIATE") ~ "ALFAIATE",
+    
+    str_detect(tipo_neg_pad, "BOLINHOS") ~ "VENDA BOLINHOS",
+    
+    str_detect(tipo_neg_pad, "COMERCIANTE") ~ "COMERCIANTE",
+    
+    str_detect(tipo_neg_pad, "CORTE.*COSTURA|COSTURQ") ~ "CORTE E COSTURA",
+    
+    str_detect(tipo_neg_pad, "TAXI") ~ "TAXI",
+    
+    str_detect(tipo_neg_pad, "MERCEARIA") ~ "MERCEARIA",
+    
+    str_detect(tipo_neg_pad, "CARVAO") ~ "VENDA CARVÃO",
+    
+    str_detect(tipo_neg_pad, "BADJIA") ~ "VENDA BADJIA",
+    
+    str_detect(tipo_neg_pad, "MAHEU") ~ "VENDA MAHEU",
+    
+    str_detect(tipo_neg_pad, "ALIMENTOS|PRODUTOS ALIMENTARES|COMIDA") ~ "VENDA ALIMENTOS",
+    
+    str_detect(tipo_neg_pad, "ROPA|ROUPAS|ROFODAS|CAPULANA") ~ "VENDA ROUPAS",
+    
+    str_detect(tipo_neg_pad, "PEIXE") ~ "VENDA PEIXE",
+    
+    str_detect(tipo_neg_pad, "REFRESCOS|BEBIDAS|GELINHO|FROZY|BEBIDAS CASEIRAS") ~ "VENDA BEBIDAS",
+    
+    TRUE ~ tipo_neg_pad # mantém os restantes sem mudança
+  ))
+
+table(Perfil_NEXUS$tipo_neg)
 # Presencas_Nexus <- Presencas_Nexus %>%
 #   select(
 #     Distrito,
