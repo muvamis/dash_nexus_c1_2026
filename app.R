@@ -3,7 +3,7 @@
 ## UI
 ############################################
 ui <- navbarPage(
-  title = "NEXUS",
+  title = "Fazer_Prosperar",
   
   ############################################
   ## ESTILO E TEMA
@@ -136,6 +136,14 @@ ui <- navbarPage(
             tags$h4("Estado Civil dos Participantes", style = "text-align:center; margin-bottom:10px;"),
             plotlyOutput("grafico_Estado_Civil")
           )
+        ),
+        fluidRow(
+          column(
+            12,
+            tags$h4("Distribuição dos Participantes por Tipo de Negócios", style = "text-align:center; margin-bottom:10px;"),
+            plotlyOutput("grafico_Negocios")
+          )
+          
         )
         
       )
@@ -231,6 +239,17 @@ ui <- navbarPage(
             dataTableOutput("tabelaPresencas")
           )
         )
+      )
+    )
+  ),
+  
+  tabPanel(
+    title = tagList(icon("clipboard-check"), "Avaliação_Sessões"),
+    
+    tabsetPanel(
+      tabPanel("Qualidade_Sessões",
+               h4("Tabela de Avaliação das Sessões"),
+               DTOutput("tabela_qualidade")
       )
     )
   ),
@@ -548,7 +567,36 @@ server <- function(input, output, session){
         yaxis = list(title = "Número de participantes")
       )
   })
+ 
   
+## GRAFICO DE NEGOCIOS
+  
+  output$grafico_Negocios <- renderPlotly({
+    
+    dados_negocios <- Perfil_NEXUS %>%
+      group_by(tipo_neg) %>%
+      summarise(Quantidade = n(), .groups = "drop") %>%
+      arrange(desc(Quantidade)) %>%  # 👈 maior → menor
+      mutate(tipo_neg = factor(tipo_neg, levels = tipo_neg))  # 👈 fixa ordem
+    
+    plot_ly(
+      data = dados_negocios,
+      x = ~tipo_neg,
+      y = ~Quantidade,
+      type = 'bar',
+      text = ~Quantidade,
+      textposition = 'auto'
+    ) %>%
+      layout(
+        barmode = "stack",
+        title = "",
+        showlegend = TRUE,
+        paper_bgcolor = "#f5f3f4",
+        plot_bgcolor  = "#f5f3f4",
+        xaxis = list(title = "", tickangle = -45),
+        yaxis = list(title = "Número de participantes")
+      )
+  })
   
 #   
 #   # SESSÕES COLECTIVAS

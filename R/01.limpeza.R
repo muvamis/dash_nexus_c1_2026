@@ -143,7 +143,21 @@ Perfil_NEXUS <- Perfil_NEXUS %>%
   )
 
 Perfil_NEXUS <- Perfil_NEXUS %>%
+  mutate(
+    Comunidade = recode(Comunidade,
+                        "MATHUPE" = "MATHAPUE",
+                        "ONPUTAIA" = "ONTUPAIA",
+                        "MUATHAPUE"  = "MATHAPUE",
+                        "MORRUPELANE"  = "MURRUPELANE",
+                        "MURRUPELENE" = "MURRUPELANE"
+    )
+  )
+
+Perfil_NEXUS <- Perfil_NEXUS %>%
   select(-c(4, 11, 13, 14, 15, 16, 18, 22,74, 75, 76, 77, 79, 80, 81, 82))
+
+table(Perfil_NEXUS$Comunidade)
+
 
 # write_xlsx(
 #   Perfil_NEXUS,
@@ -218,53 +232,120 @@ sessao_cols_ordenadas <- sessao_cols[order(as.numeric(gsub("Sessão_?", "", sess
 
 table(Perfil_NEXUS$tipo_neg)
 
-library(dplyr)
-library(stringr)
-
 Perfil_NEXUS <- Perfil_NEXUS %>%
-  mutate(tipo_neg_pad = str_to_upper(tipo_neg)) %>%  # transforma tudo em maiúsculas
-  mutate(tipo_neg_pad = str_trim(tipo_neg_pad)) %>%  # remove espaços extras
-  # padronização por palavras-chave
-  mutate(tipo_neg_pad = case_when(
-    
-    str_detect(tipo_neg_pad, "AGENTE.*EMOLA|AGENTE.*CONTA MOVEL|AGENTE E-MOLA|AGENTES E-MOLA") ~ "AGENTE EMOLA",
-    
-    str_detect(tipo_neg_pad, "ALFAIATE") ~ "ALFAIATE",
-    
-    str_detect(tipo_neg_pad, "BOLINHOS") ~ "VENDA BOLINHOS",
-    
-    str_detect(tipo_neg_pad, "COMERCIANTE") ~ "COMERCIANTE",
-    
-    str_detect(tipo_neg_pad, "CORTE.*COSTURA|COSTURQ") ~ "CORTE E COSTURA",
-    
-    str_detect(tipo_neg_pad, "TAXI") ~ "TAXI",
-    
-    str_detect(tipo_neg_pad, "MERCEARIA") ~ "MERCEARIA",
-    
-    str_detect(tipo_neg_pad, "CARVAO") ~ "VENDA CARVÃO",
-    
-    str_detect(tipo_neg_pad, "BADJIA") ~ "VENDA BADJIA",
-    
-    str_detect(tipo_neg_pad, "MAHEU") ~ "VENDA MAHEU",
-    
-    str_detect(tipo_neg_pad, "ALIMENTOS|PRODUTOS ALIMENTARES|COMIDA") ~ "VENDA ALIMENTOS",
-    
-    str_detect(tipo_neg_pad, "ROPA|ROUPAS|ROFODAS|CAPULANA") ~ "VENDA ROUPAS",
-    
-    str_detect(tipo_neg_pad, "PEIXE") ~ "VENDA PEIXE",
-    
-    str_detect(tipo_neg_pad, "REFRESCOS|BEBIDAS|GELINHO|FROZY|BEBIDAS CASEIRAS") ~ "VENDA BEBIDAS",
-    
-    TRUE ~ tipo_neg_pad # mantém os restantes sem mudança
-  ))
+  mutate(
+    tipo_neg = case_when(
+      
+      # Grupo 1
+      tipo_neg %in% c(
+        "AGENTE DE CARTEIRA MOVEL (EMOLA)",
+        "AGENTE DE CONTA MOVEL(MPESA E EMOLA)",
+        "AGENTE E-MOLA",
+        "AGENTE EMOLA",
+        "AGENTES E-MOLA"
+      ) ~ "AGENTE DE CARTEIRA MÓVEL",
+      
+      tipo_neg %in% c(
+        "VENDA DE ARTIGO DE ROUPA",
+        "VENDA DE ROUPAS USADAS ( CALAMIDADE)",
+         "VENDA DE ROUPA ( CAPULANA)"
+        # "AGENTE EMOLA",
+        # "AGENTES E-MOLA"
+      ) ~ "VENDA DE ROUPA DA CALAMIDADE",
+      
+      # # Grupo 2
+      tipo_neg %in% c(
+        "MERCEARIA ( VENDA DE PRODUTOS DIVERSOS)",
+        "MERCEARIA E VENDA E PRODUTOS ALIMENTAR",
+        "PRODUTOS ALIMENTARES DE PRIMEIRA NECESSIDADE",
+        "VENDE PRODUTOS DE PRIMAVERA NECESSIDADE:PEIXINHO, OLEO, CIGARO,ENTE OUTROS.",
+        "VENDE PRODUTOS ALIMENTARES DIVERSOS E DE PRIMEIRA NECESSIDADE.",
+        "VENDA PRODUTOS DE PRIMEIRA NECESSIDADE (ARROZ, FARINHA)",
+        "VENDA DE PRODUTOS ALIMENTARES",
+        "VENDA DE DIVERSOS PRODUTOS ALIMENTARES",
+        "VENDO ALIMENTARES.",
+         "VENDA DE ALIMENTOS."
+      ) ~ "VENDA DE PRODUTOS NA MERCEARIA",
+      
+      tipo_neg %in% c(
+        "VENDA DE BADJIAS",
+        "VENDE BADJIAS",
+        "VENDA PRODUTOS ALIMENTARES (BADJIAS",
+        "VENDA DE BADJIA E MAHEU"
+      ) ~ "VENDA DE BADJIA",
+      
+      tipo_neg %in% c(
+        "VENDA DE PEIXE E BOLINHOS",
+        "VENDA DE PEIXES FRESCOS.",
+        "VENDA DE PEIXE (NICUSE)",
+        "VENDA DE PEIXE FRESCO E SECO"
+      ) ~ "VENDA DE PEIXE",
+      
+      tipo_neg %in% c(
+        "VENDAS DE REFEICOES",
+        "VENDA DE COMIDA COZIDA",
+        "VENDA DE COMIDA"
+      ) ~ "VENDA DE REFEIÇÕES",
+      
+      tipo_neg %in% c(
+        "VENDA DE FEIJAO BUERE",
+        "VENDA DE FEIJAO FAVA",
+        "VENDA DE FEIJAO"
+      ) ~ "VENDA DE FEIJAO",
+      
+      tipo_neg %in% c(
+        "VENDA DE BEBIDAS CASEIRAS /TRADITIONAL",
+        "VENDE CERVEJA",
+        "FACO TAXI MOTA E VENDO BEBIDAS NO BAR"
+      ) ~ "VENDA DE BEBIDAS",
+      
+      tipo_neg %in% c(
+        "BOLINHOS",
+        "VENDO BOLINHOS",
+        "VENDA DE BOLINHOS E MAHEU",
+        "VENDAS DE BOLINHOS.",
+        "VENDA DE BOLINHOS E BADJIA",
+        "VENDO BOLINHOS E CHINELOS",
+        "VENDA DE PRODUTOS ALIMENTARES (BOLINHOS)"
+      ) ~ "VENDA DE BOLINHOS",
+      
+      tipo_neg %in% c(
+        "VENDE ROFADAS E FAZ BISCATOS NAS MACHAMBAS",
+         "VENDO ROFADAS",
+         "VENDA DE ROFODAS"
+      ) ~ "VENDA DE ARRUFADAS",
+      
+      tipo_neg %in% c(
+        # "VENDA DE CARVAO , BOLINHOS, ARROZ",
+        "VENDA DE CARVAO",
+        "PRODUCAO E VENDA DE CARVAO VEGETAL"
+      ) ~ "VENDA DE CARVAO",
+      
+      tipo_neg %in% c(
+        "PRESTO SERVICOS EM CAPINAR MACHAMBAS DAS PESSOAS."
+      ) ~ "SERVICO DE CAPINAR",
+      
+      tipo_neg %in% c(
+        "TAXI"
+      ) ~ "SERVICO DE TAXI",
+      
+      tipo_neg %in% c(
+        "VENDA DE CARVAO , BOLINHOS, ARROZ",
+        "VENDA DE REFRESCOS",
+        "VENDA DE FROZY E AGUA"
+      ) ~ "VENDA DE REFREGERANTES",
+      
+      
+      # Grupo 3
+      tipo_neg %in% c(
+        "COSTURQ",
+        # "CORTE E COSTURA PRESTO SERVICOS EM CAPINAR MACHAMBAS DAS PESSOAS.",
+        "CORTE E COSTURA.",
+        "ALFAIATE"
+      ) ~ "CORTE E COSTURA",
+      
+      TRUE ~ tipo_neg
+    )
+  )
 
 table(Perfil_NEXUS$tipo_neg)
-# Presencas_Nexus <- Presencas_Nexus %>%
-#   select(
-#     Distrito,
-#     Comunidade,
-#     Sexo,
-#     Nome_participante,
-#     Facilitadores,
-#     all_of(sessao_cols_ordenadas)
-#   )
