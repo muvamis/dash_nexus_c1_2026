@@ -98,12 +98,26 @@ ui <- navbarPage(
         fluidRow(
           column(
             6,
-            tags$h4("Percentagens de Participantes por Sexo", style = "text-align:center; margin-bottom:10px;"),
+            div(
+              style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+              tags$p(
+                style = "margin: 0; text-align: justify;",
+                tags$b("Distribuição Por sexo:"),
+                "O gráfico abaixo apresenta o total de participantes selecionad@s em Monapo e Nacala."
+              )
+            ),
             plotlyOutput("grafico_sexo")
           ),
           column(
             6,
-            tags$h4("Distribuição por Categoria de Beneficiários (IDP, VBG e FA)", style = "text-align:center; margin-bottom:10px;"),
+            div(
+              style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+              tags$p(
+                style = "margin: 0; text-align: justify;",
+                tags$b("Distribuição dos Beneficiários:"),
+                "O gráfico apresenta a distribuição dos beneficiários por categoria:nomeadamente Pessoas Deslocadas Internamente (IDP), sobreviventes de Violência Baseada no Género (VBG) e Agregados Familiares (FA)."
+              )
+            ),
             plotlyOutput("grafico_distrito")
           )
         ),
@@ -113,12 +127,26 @@ ui <- navbarPage(
         fluidRow(
           column(
             6,
-            tags$h4("Número de Participantes Engajados em Actividades de Negócio", style = "text-align:center; margin-bottom:10px;"),
+            div(
+              style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+              tags$p(
+                style = "margin: 0; text-align: justify;",
+                tags$b("Número de Participantes Engajados em Actividades de Negócio:"),
+                "O gráfico apresenta o número de participantes envolvidos em actividades de negócio, evidenciando o nível de engajamento económico no programa."
+              )
+            ),
             plotlyOutput("grafico_Negocio")
           ),
           column(
             6,
-            tags$h4("Distribuição de Participantes com Poupança", style = "text-align:center; margin-bottom:10px;"),
+            div(
+              style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+              tags$p(
+                style = "margin: 0; text-align: justify;",
+                tags$b("Distribuição de Participantes com Poupança:"),
+                "O gráfico mostra a proporção de participantes que possuem poupança, permitindo avaliar a inclusão financeira e hábitos de economia dentro do programa."
+              )
+            ),
             plotlyOutput("grafico_Poupa")
           )
         ),
@@ -128,19 +156,41 @@ ui <- navbarPage(
         fluidRow(
           column(
             6,
-            tags$h4("Distribuição dos Participantes por Nível de Escolaridade", style = "text-align:center; margin-bottom:10px;"),
+            div(
+              style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+              tags$p(
+                style = "margin: 0; text-align: justify;",
+                tags$b("Nível de Escolaridade:"),
+                "O gráfico apresenta a distribuição dos participantes segundo o seu nível de escolaridade, permitindo compreender o perfil educativo do público-alvo do programa."
+              )
+            ),
             plotlyOutput("grafico_Escolaridade")
           ),
           column(
             6,
-            tags$h4("Estado Civil dos Participantes", style = "text-align:center; margin-bottom:10px;"),
+            div(
+              style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+              tags$p(
+                style = "margin: 0; text-align: justify;",
+                tags$b("Estado Civil dos Participantes:"),
+                "O gráfico apresenta a distribuição dos participantes de acordo com o seu estado civil, permitindo analisar a composição familiar e social do público-alvo."
+              )
+            ),
             plotlyOutput("grafico_Estado_Civil")
           )
         ),
+        br(),
         fluidRow(
           column(
             12,
-            tags$h4("Distribuição dos Participantes por Tipo de Negócios", style = "text-align:center; margin-bottom:10px;"),
+            div(
+              style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+              tags$p(
+                style = "margin: 0; text-align: justify;",
+                tags$b("Tipo de Negócios:"),
+                "O gráfico apresenta a distribuição dos participantes segundo o tipo de negócio em que estão envolvidos, permitindo compreender a diversidade de actividades económicas no programa."
+              )
+            ),
             plotlyOutput("grafico_Negocios")
           )
           
@@ -391,7 +441,7 @@ server <- function(input, output, session){
         paper_bgcolor = "#f5f3f4",
         plot_bgcolor  = "#f5f3f4",
         xaxis = list(title = ""),
-        yaxis = list(title = "Número de participantes")
+        yaxis = list(title = "Número de participantes", range = c(0, 400))
       )
   })
   
@@ -427,7 +477,7 @@ server <- function(input, output, session){
         paper_bgcolor = "#f5f3f4",
         plot_bgcolor  = "#f5f3f4",
         xaxis = list(title = ""),
-        yaxis = list(title = "Número de participantes")
+        yaxis = list(title = "Número de participantes", range = c(0, 400))
       )
   })
   
@@ -463,7 +513,7 @@ server <- function(input, output, session){
         paper_bgcolor = "#f5f3f4",
         plot_bgcolor  = "#f5f3f4",
         xaxis = list(title = ""),
-        yaxis = list(title = "Número de participantes")
+        yaxis = list(title = "Número de participantes", range = c(0, 400))
       )
   })
   
@@ -516,7 +566,7 @@ server <- function(input, output, session){
         paper_bgcolor = "#f5f3f4",
         plot_bgcolor  = "#f5f3f4",
         xaxis = list(title = "", tickangle = -20),
-        yaxis = list(title = "Número de participantes")
+        yaxis = list(title = "Número de participantes", range = c(0, 400))
       )
   })
   
@@ -564,7 +614,7 @@ server <- function(input, output, session){
         paper_bgcolor = "#f5f3f4",
         plot_bgcolor  = "#f5f3f4",
         xaxis = list(title = ""),
-        yaxis = list(title = "Número de participantes")
+        yaxis = list(title = "Número de participantes", range = c(0, 400))
       )
   })
  
