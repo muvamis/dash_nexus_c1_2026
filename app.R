@@ -293,13 +293,36 @@ ui <- navbarPage(
     )
   ),
   
+  ############################################
+  ## PÁGINA QUALIDADE DAS SESSOES
+  ############################################
   tabPanel(
     title = tagList(icon("clipboard-check"), "Avaliação_Sessões"),
-    
-    tabsetPanel(
-      tabPanel("Qualidade_Sessões",
-               h4("Tabela de Avaliação das Sessões"),
-               DTOutput("tabela_qualidade")
+
+    sidebarLayout(
+      sidebarPanel(
+        selectInput("filtro_distrito_Qual", "Escolher Distrito",
+                    choices = c("TODOS", unique(Qualidade_Sessoes$Distrito))
+        ),
+        selectInput("filtro_comunidade_Qual", "Escolher Comunidade",
+                    choices = c("TODAS", unique(Qualidade_Sessoes$Comunidade))
+        ),
+        selectInput("filtro_facilitador_Qual", "Escolher Facilitador",
+                    choices = c("TODOS", unique(Qualidade_Sessoes$Facilitadores))
+        )
+      ),
+
+      mainPanel(
+        div(
+          style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+          tags$p(
+            style = "margin: 0; text-align: justify;",
+            tags$b("Qualidade das Sessões:"),
+            "As sessões do projeto foram avaliadas pelos participantes considerando diferentes níveis de satisfação, desde Muito Mau até Muito Bom. 
+      A avaliação reflete a experiência dos participantes, o engajamento e a relevância do conteúdo. 
+      Esta análise permite identificar áreas de sucesso e oportunidades de melhoria, contribuindo para fortalecer a eficácia das futuras sessões e garantir maior impacto nas comunidades."
+          )),
+        DTOutput("tabela_qualidade")
       )
     )
   ),
@@ -996,8 +1019,84 @@ server <- function(input, output, session){
         )
       )
     })
-
-
+################# PAGINA QUALIDADE DAS SESSOES
+    
+    # =========================
+    # 1. Inicializa Distritos com "TODOS"
+    observe({
+      updateSelectInput(
+        session, 
+        "filtro_distrito_Qual",
+        choices = c("TODOS", sort(unique(Qualidade_Sessoes$Distrito))),
+        selected = "TODOS"
+      )
+    })
+    
+    # =========================
+    # 2. Comunidades dependem do Distrito
+    observeEvent(input$filtro_distrito_Qual, {
+      dados <- Qualidade_Sessoes
+      if (!is.null(input$filtro_distrito_Qual) && input$filtro_distrito_Qual != "TODOS") {
+        dados <- dados %>% filter(Distrito %in% input$filtro_distrito_Qual)
+      }
+      updateSelectInput(
+        session,
+        "filtro_comunidade_Qual",
+        choices = c("TODAS", sort(unique(dados$Comunidade))),
+        selected = "TODAS"
+      )
+    })
+    
+    # =========================
+    # 3. Facilitadores dependem da Comunidade
+    observeEvent(c(input$filtro_distrito_Qual, input$filtro_comunidade_Qual), {
+      dados <- Qualidade_Sessoes
+      
+      if (!is.null(input$filtro_distrito_Qual) && input$filtro_distrito_Qual != "TODOS") {
+        dados <- dados %>% filter(Distrito %in% input$filtro_distrito_Qual)
+      }
+      
+      if (!is.null(input$filtro_comunidade_Qual) && input$filtro_comunidade_Qual != "TODAS") {
+        dados <- dados %>% filter(Comunidade %in% input$filtro_comunidade_Qual)
+      }
+      
+      updateSelectInput(
+        session,
+        "filtro_facilitador_Qual",
+        choices = c("TODOS", sort(unique(dados$Facilitadores))),
+        selected = "TODOS"
+      )
+    })
+    
+    # =========================
+    # 4. Dados filtrados
+    dados_filtrados_Qual <- reactive({
+      dados <- Qualidade_Sessoes
+      
+      if (!is.null(input$filtro_distrito_Qual) && input$filtro_distrito_Qual != "TODOS") {
+        dados <- dados %>% filter(Distrito %in% input$filtro_distrito_Qual)
+      }
+      
+      if (!is.null(input$filtro_comunidade_Qual) && input$filtro_comunidade_Qual != "TODAS") {
+        dados <- dados %>% filter(Comunidade %in% input$filtro_comunidade_Qual)
+      }
+      
+      if (!is.null(input$filtro_facilitador_Qual) && input$filtro_facilitador_Qual != "TODOS") {
+        dados <- dados %>% filter(Facilitadores %in% input$filtro_facilitador_Qual)
+      }
+      
+      dados
+    })
+    
+    # =========================
+    # 5. Renderizar tabela
+    output$tabela_qualidade <- renderDT({
+      # Remove nomes de colunas/linhas extras e garante data.frame
+      df <- as.data.frame(dados_filtrados_Qual(), stringsAsFactors = FALSE)
+      rownames(df) <- NULL   # remove nomes de linha que podem gerar warning
+      
+      datatable(df, options = list(pageLength = 10))
+    })
     
     
 #   
@@ -1023,8 +1122,18 @@ server <- function(input, output, session){
       # Baixar
       writexl::write_xlsx(dados, path = "Presencas_Nexus.xlsx")
       
+      ## 1. Presenças Coletivas
+      Qualidade_Sessoes <- RZohoCreator::get_records(
+        "associacaomuva", "monitoria", "Qualidade_Sess_es_Fazer_Prosperar_Report", access_token
+      ) %>%
+        data.frame()
+      
+      # Baixar
+      writexl::write_xlsx(Qualidade_Sessoes, path = "Qualidade_Sessoes.xlsx")
+      
       return(list(
-        dados = dados
+        dados = dados,
+        Qualidade_Sessoes = Qualidade_Sessoes
       ))
     }, error = function(e) {
       message("Erro ao atualizar dados: ", e$message)

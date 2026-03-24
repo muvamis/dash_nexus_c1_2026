@@ -225,6 +225,11 @@ Presencas_Nexus <- Presencas_Nexus %>%
   )
 
 
+
+Presencas_Nexus <- Presencas_Nexus %>%
+  mutate(Facilitadores = str_to_title(Facilitadores))
+
+
 sessao_cols <- names(Presencas_Nexus)[grepl("^Sessão_?\\d+$", names(Presencas_Nexus))]
 
 
@@ -349,3 +354,76 @@ Perfil_NEXUS <- Perfil_NEXUS %>%
   )
 
 table(Perfil_NEXUS$tipo_neg)
+
+############### QUALIDADE DAS SESSOES NEXUS
+
+Qualidade_Sessoes <- read_excel("Qualidade_Sessoes.xlsx")
+
+Qualidade_Sessoes <- Qualidade_Sessoes %>%
+  select(-c(9))
+
+
+Qualidade_Sessoes <- Qualidade_Sessoes %>%
+  rename(
+    Nome_Sessao = Numero_da_Sess_o 
+   
+  )
+
+
+Qualidade_Sessoes <- Qualidade_Sessoes %>%
+  select(
+    Data, Distrito, Comunidade, Facilitadores, Nome_Sessao,
+    Quantos_Participantes_responderam_Muito_Mau, 
+    Quantos_Participantes_responderam_Mau,
+    Quantos_Participantes_responderam_Neutro,
+    Quantos_Participantes_responderam_Bom,
+    Quantos_Participantes_responderam_Muito_Bom,
+    everything()
+  ) %>%
+  arrange(Data, Distrito, Comunidade)
+
+Qualidade_Sessoes <- Qualidade_Sessoes %>%
+  mutate(
+    across(
+      starts_with("Quantos_Participantes_responderam"),
+      ~ as.numeric(.)
+    )
+  )
+
+Qualidade_Sessoes <- Qualidade_Sessoes %>%
+  rename(
+   Muito_Mau = Quantos_Participantes_responderam_Muito_Mau, 
+   Mau = Quantos_Participantes_responderam_Mau,
+    Neutro = Quantos_Participantes_responderam_Neutro,
+    Bom = Quantos_Participantes_responderam_Bom,
+    Muito_Bom = Quantos_Participantes_responderam_Muito_Bom
+    
+  )
+
+# Calcular Total_Participantes usando os novos nomes
+Qualidade_Sessoes <- Qualidade_Sessoes %>%
+  mutate(
+    Total_Participantes = rowSums(
+      select(., Muito_Mau, Mau, Neutro, Bom, Muito_Bom),
+      na.rm = TRUE
+    )
+  )
+
+# Criar linha de totais
+totais <- Qualidade_Sessoes %>%
+  summarise(
+    Data = NA,  # ou "" se preferir
+    Distrito = "TOTAL",
+    Comunidade = "",
+    Facilitadores = "",
+    Nome_Sessao = "",
+    Muito_Mau = sum(Muito_Mau, na.rm = TRUE),
+    Mau = sum(Mau, na.rm = TRUE),
+    Neutro = sum(Neutro, na.rm = TRUE),
+    Bom = sum(Bom, na.rm = TRUE),
+    Muito_Bom = sum(Muito_Bom, na.rm = TRUE),
+    Total_Participantes = sum(Total_Participantes, na.rm = TRUE)
+  )
+
+# Adicionar a linha de totais no final
+Qualidade_Sessoes <- bind_rows(Qualidade_Sessoes, totais)
