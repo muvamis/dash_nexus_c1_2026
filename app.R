@@ -327,8 +327,42 @@ ui <- navbarPage(
     )
   ),
   
+  # Página 3 - Grants
+  tabPanel(
+    tagList(icon("hand-holding-usd"), "Grants"),
+    
+    sidebarLayout(
+      sidebarPanel(
+        
+        selectInput("filtro_grants_distrito",  "Selecionar Distrito:",
+                    choices = c("Todos", unique(Presencas_Nexus$Distrito)),
+                    selected = "Todos"),
+        
+        selectInput("filtro_grants_facilitador", "Selecionar Facilitador:",
+                    choices = c("Todos", unique(Presencas_Nexus$Facilitadores)),
+                    selected = "Todos")
+      ),
+      
+      mainPanel(
+        
+        div(
+          style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+          tags$p(
+            style = "margin: 0; text-align: justify;",
+            "A elegibilidade para atribuição do grants foi definida com base na assiduidade, sendo considerados elegíveis apenas os participantes com pelo menos 66.7% de participação nas sessões (equivalente a um mínimo de 8 presenças em 12 sessões). Participantes com 4 ou mais faltas não são elegíveis.
+            Os pintados a roxo são elegíveis"
+          )
+        ),
+        
+        DT::dataTableOutput("tabela_grants"),
+        
+        plotlyOutput("grafico_percentagem_grants", height = "400px")
+      )
+    )
+  ), 
+  
   ############################################
-  ## PÁGINA 3 – ADMIN
+  ## PÁGINA 4 – ADMIN
   ############################################
   tabPanel(
     title = tagList(icon("user-shield"), "Admin"),
@@ -1019,6 +1053,92 @@ server <- function(input, output, session){
         )
       )
     })
+    ############# GRANTS
+    
+    ### 🔹 1. Preparar dados (fora do server ou no início)
+    Presencas_Nexus <- Presencas_Nexus %>%
+      mutate(
+        # Contar presenças
+        Total_Presencas = rowSums(
+          across(matches("^Sessão_\\d+$"), ~ . == "Presente"),
+          na.rm = TRUE
+        ),
+        
+        # Contar AUSENTES
+        Total_Ausentes = rowSums(
+          across(matches("^Sessão_\\d+$"), ~ . == "Ausente"),
+          na.rm = TRUE
+        ),
+        
+        # Contar PROBLEMÁTICOS (NA ou Ausente)
+        Total_Problematico = rowSums(
+          across(matches("^Sessão_\\d+$"), ~ is.na(.) | . == "Ausente")
+        ),
+        
+        # Total sessões
+        Total_Sessoes = length(grep("^Sessão_\\d+$", names(Presencas_Nexus))),
+        
+        # Percentagem (continua útil)
+        Percentual_Presenca = (Total_Presencas / Total_Sessoes) * 100,
+        
+        # REGRA FINAL (baseada em problemáticos)
+        Elegivel_Grant = ifelse(Total_Problematico < 4, "Elegível", "Não Elegível")
+      )
+    
+    ### 🔹 2. Reactive para filtros
+    dados_grants <- reactive({
+      
+      df <- Presencas_Nexus
+      
+      if (input$filtro_grants_distrito != "Todos") {
+        df <- df %>% filter(Distrito == input$filtro_grants_distrito)
+      }
+      
+      if (input$filtro_grants_facilitador != "Todos") {
+        df <- df %>% filter(Facilitadores == input$filtro_grants_facilitador)
+      }
+      
+      df
+    })
+    
+    
+    ### 🔹 3. Tabela Grants
+    output$tabela_grants <- DT::renderDataTable({
+      
+      df <- dados_grants()
+      
+      DT::datatable(
+        df %>%
+          select(
+            Distrito,
+            Facilitadores,
+            Nome_participante,
+            Total_Presencas,
+            Total_Ausentes,
+            Total_Problematico,
+            Percentual_Presenca,
+            Elegivel_Grant
+          ),
+        rownames = FALSE,
+        options = list(
+          pageLength = 10,
+          dom = "lfrtip"
+        )
+      ) %>%
+        
+        DT::formatRound("Percentual_Presenca", 1) %>%
+        
+        DT::formatStyle(
+          "Elegivel_Grant",
+          target = "row",
+          backgroundColor = DT::styleEqual(
+            c("Elegível", "Não Elegível"),
+            c("#9942D4", "#F77333")
+          )
+        )
+    })
+    
+    
 ################# PAGINA QUALIDADE DAS SESSOES
     
     # =========================
@@ -1098,7 +1218,7 @@ server <- function(input, output, session){
       datatable(df, options = list(pageLength = 10))
     })
     
-    
+
 #   
   # ADMIN
   # Função principal de atualização
