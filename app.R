@@ -353,7 +353,7 @@ ui <- navbarPage(
             Os pintados a roxo são elegíveis"
           )
         ),
-        
+        downloadButton("baixar_grants", "Baixar Lista (Excel)"),
         DT::dataTableOutput("tabela_grants"),
         
         plotlyOutput("grafico_percentagem_grants", height = "400px")
@@ -1138,6 +1138,35 @@ server <- function(input, output, session){
         )
     })
     
+    output$baixar_grants <- downloadHandler(
+      
+      filename = function() {
+        paste0("lista_grants_", Sys.Date(), ".xlsx")
+      },
+      
+      content = function(file) {
+        
+        library(openxlsx)
+        
+        df <- dados_grants()
+        
+        # Selecionar colunas relevantes
+        df_export <- df %>%
+          select(
+            Distrito,
+            Facilitadores,
+            Nome_participante,
+            Total_Presencas,
+            Total_Ausentes,
+            Total_Problematico,
+            Percentual_Presenca,
+            Elegivel_Grant
+          )
+        
+        # Criar ficheiro Excel
+        write.xlsx(df_export, file)
+      }
+    )
     
 ################# PAGINA QUALIDADE DAS SESSOES
     
