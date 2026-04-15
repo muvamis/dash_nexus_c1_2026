@@ -73,7 +73,7 @@ ui <- navbarPage(
           style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
           tags$p(
             style = "margin: 0; text-align: justify;",
-            tags$b("NEXUS/Fazer Prosperar. "),
+            tags$b("Fazer Prosperar. "),
             "O projeto visa dar uma resposta transformadora às barreiras estruturais que limitam o acesso das pessoas deslocadas – particularmente mulheres,  e sobreviventes de violência baseada no género (VBG) – a oportunidades de geração de rendimento e inclusão económica sustentável."
           )
         ),
@@ -235,7 +235,7 @@ ui <- navbarPage(
               )
             ),
 
-            downloadButton("baixarBasePresencasExcel", "Baixar Presenças"),
+            # downloadButton("baixarBasePresencasExcel", "Baixar Presenças"),
             withSpinner(plotlyOutput("graficoParticipacaoGlobal", height = "500px")),
             br(), br(),
             div(
@@ -815,7 +815,7 @@ server <- function(input, output, session){
         list(
           x = totais_sessao$Sessao[i],
           y = totais_sessao$total[i] + 10,
-          text = paste("Total:", totais_sessao$total[i]),
+          text = paste("", totais_sessao$total[i]),
           showarrow = FALSE,
           font = list(size = 12, color = "black")
         )
@@ -1111,6 +1111,7 @@ server <- function(input, output, session){
         df %>%
           select(
             Distrito,
+            Comunidade,
             Facilitadores,
             Nome_participante,
             Total_Presencas,
@@ -1134,7 +1135,8 @@ server <- function(input, output, session){
           backgroundColor = DT::styleEqual(
             c("Elegível", "Não Elegível"),
             c("#9942D4", "#F77333")
-          )
+          ),
+          color = "white"
         )
     })
     
