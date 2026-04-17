@@ -349,14 +349,21 @@ ui <- navbarPage(
           style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
           tags$p(
             style = "margin: 0; text-align: justify;",
-            "A elegibilidade para atribuição do grants foi definida com base na assiduidade, sendo considerados elegíveis apenas os participantes com pelo menos 66.7% de participação nas sessões (equivalente a um mínimo de 8 presenças em 12 sessões). Participantes com 4 ou mais faltas não são elegíveis.
-            Os pintados a roxo são elegíveis"
+            "A elegibilidade para atribuição do grants foi definida com base na assiduidade, sendo considerados elegíveis apenas os participantes com pelo menos 66.7% de participação nas sessões (equivalente a um mínimo de 8 presenças em 12 sessões). Participantes com 4 ou mais faltas não são elegíveis."
+          )
+        ),
+      
+        plotlyOutput("grafico_percentagem_grants", height = "400px"),
+        br(),
+        div(
+          style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+          tags$p(
+            style = "margin: 0; text-align: justify;",
+            "A tabela apresenta os participantes e respetivo estado de elegibilidade para atribuição do grants, com base na assiduidade registada. São considerados elegíveis os participantes com menor nível de faltas (menos de 4 ausencias), sendo esta informação refletida na coluna 'Elegivel_Grant'. Os participantes elegíveis são identificados a roxo, enquanto os não elegíveis são apresentados a laranja."
           )
         ),
         downloadButton("baixar_grants", "Baixar Lista (Excel)"),
-        DT::dataTableOutput("tabela_grants"),
-        
-        plotlyOutput("grafico_percentagem_grants", height = "400px")
+        DT::dataTableOutput("tabela_grants")
       )
     )
   ), 
@@ -1169,6 +1176,109 @@ server <- function(input, output, session){
         write.xlsx(df_export, file)
       }
     )
+    
+    output$grafico_percentagem_grants <- renderPlotly({
+      
+      df <- Presencas_Nexus
+      
+      # ================================
+      # 🔹 Filtros
+      # ================================
+      if (input$filtro_grants_distrito != "Todos") {
+        df <- df %>% filter(Distrito == input$filtro_grants_distrito)
+      }
+      
+      if (input$filtro_grants_facilitador != "Todos") {
+        df <- df %>% filter(Facilitadores == input$filtro_grants_facilitador)
+      }
+      
+      # ================================
+      # 🔹 Agregação
+      # ================================
+      df <- df %>%
+        group_by(Distrito, Sexo) %>%
+        summarise(
+          Total = n(),
+          Elegiveis = sum(Elegivel_Grant == "Elegível"),
+          Percentagem = (Elegiveis / Total) * 100,
+          .groups = "drop"
+        ) %>%
+        arrange(desc(Percentagem))
+      
+      df$Sexo <- factor(df$Sexo, levels = c("Feminino", "Masculino"))
+      
+      # 🔹 Limite dinâmico
+      limite_y <- max(df$Percentagem, na.rm = TRUE) + 15
+      
+      # ================================
+      # 🔹 Gráfico
+      # ================================
+      plot_ly(
+        df,
+        x = ~Distrito,
+        y = ~Percentagem,
+        color = ~Sexo,
+        colors = c("#9942D4", "#F77333"),
+        type = "bar",
+        
+        # ✔️ Texto nas barras (AGORA COMPLETO)
+        text = ~paste0(
+          round(Percentagem,1), "%<br>(",
+          Elegiveis, "/", Total, ")"
+        ),
+        textposition = "outside",
+        
+        # ✔️ Tooltip
+        hoverinfo = "text",
+        hovertext = ~paste0(
+          "Distrito: ", Distrito,
+          "<br>Sexo: ", Sexo,
+          "<br>Elegíveis: ", Elegiveis,
+          "<br>Total: ", Total,
+          "<br>Taxa: ", round(Percentagem,1), "%"
+        )
+        
+      ) %>%
+        layout(
+          barmode = "group",
+          
+          title = list(
+            text = "",
+            font = list(size = 16)
+          ),
+          
+          paper_bgcolor = "#f5f3f4",
+          plot_bgcolor = "#f5f3f4",
+          
+          xaxis = list(
+            title = "Distrito",
+            tickfont = list(size = 12)
+          ),
+          
+          yaxis = list(
+            title = "Percentual (%)",
+            range = c(0, limite_y),
+            tickfont = list(size = 12)
+          ),
+          
+          legend = list(
+            title = list(text = "<b>Sexo</b>")
+          ),
+          
+          annotations = list(
+            list(
+              text = "O gráfico apresenta a taxa de elegibilidade por distrito e sexo, incluindo percentagem e valores (Elegíveis/Total).",
+              x = 0,
+              y = 1.08,
+              xref = "paper",
+              yref = "paper",
+              showarrow = FALSE,
+              align = "left",
+              font = list(size = 12)
+            )
+          )
+        )
+    })
     
 ################# PAGINA QUALIDADE DAS SESSOES
     
