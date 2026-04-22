@@ -40,8 +40,8 @@ ui <- navbarPage(
         box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
       }
 
-      .blue   { background-color: #6a1b9a; }
-      .green  { background-color: #5cd6c7; }
+      .blue   { background-color: #5cd6c7; }
+      .green  { background-color: #6a1b9a; }
       .orange { background-color: #f77333; }
     "))
   ),
@@ -69,14 +69,15 @@ ui <- navbarPage(
       ),
       
       mainPanel(
-        div(
-          style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
-          tags$p(
-            style = "margin: 0; text-align: justify;",
-            tags$b("Fazer Prosperar. "),
-            "O projeto visa dar uma resposta transformadora às barreiras estruturais que limitam o acesso das pessoas deslocadas – particularmente mulheres,  e sobreviventes de violência baseada no género (VBG) – a oportunidades de geração de rendimento e inclusão económica sustentável."
-          )
-        ),
+        # div(
+        #   style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+        #   tags$p(
+        #     style = "margin: 0; text-align: justify;",
+        #     tags$b("Fazer Prosperar. "),
+        #     "O projeto visa dar uma resposta transformadora às barreiras estruturais que limitam o acesso das pessoas deslocadas – particularmente mulheres,  e sobreviventes de violência baseada no género (VBG) – a oportunidades de geração de rendimento e inclusão económica sustentável."
+        #   )
+        # ),
+        uiOutput("texto_resumo"),
         div(
           class = "value-box-container",
           
@@ -98,14 +99,15 @@ ui <- navbarPage(
         fluidRow(
           column(
             6,
-            div(
-              style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
-              tags$p(
-                style = "margin: 0; text-align: justify;",
-                tags$b("Distribuição Por sexo:"),
-                "O gráfico abaixo apresenta o total de participantes selecionad@s em Monapo e Nacala."
-              )
-            ),
+            # div(
+            #   style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+            #   tags$p(
+            #     style = "margin: 0; text-align: justify;",
+            #     tags$b("Distribuição Por sexo:"),
+            #     "O gráfico abaixo apresenta a Proporção de participantes que iniciaram a formação 'participaram em pelo menos uma sessão'."
+            #   )
+            # ),
+            uiOutput("texto_grafico_ativo"),
             plotlyOutput("grafico_sexo")
           ),
           column(
@@ -178,21 +180,21 @@ ui <- navbarPage(
             ),
             plotlyOutput("grafico_Estado_Civil")
           )
-        ),
-        br(),
-        fluidRow(
-          column(
-            12,
-            div(
-              style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
-              tags$p(
-                style = "margin: 0; text-align: justify;",
-                tags$b("Tipo de Negócios:"),
-                "O gráfico apresenta a distribuição dos participantes segundo o tipo de negócio em que estão envolvidos, permitindo compreender a diversidade de actividades económicas no programa."
-              )
-            ),
-            plotlyOutput("grafico_Negocios")
-          )
+        # ),
+        # br(),
+        # fluidRow(
+        #   column(
+        #     12,
+        #     div(
+        #       style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+        #       tags$p(
+        #         style = "margin: 0; text-align: justify;",
+        #         tags$b("Tipo de Negócios:"),
+        #         "O gráfico apresenta a distribuição dos participantes segundo o tipo de negócio em que estão envolvidos, permitindo compreender a diversidade de actividades económicas no programa."
+        #       )
+        #     ),
+        #     plotlyOutput("grafico_Negocios")
+        #   )
           
         )
         
@@ -371,6 +373,25 @@ ui <- navbarPage(
   ############################################
   ## PÁGINA 4 – ADMIN
   ############################################
+  
+  tabPanel(
+    title = tagList(icon("piggy-bank"), "Poupança"),
+    
+    # sidebarLayout(
+    #   sidebarPanel(
+    #     # actionButton(
+    #       # "botao_atualizar",
+    #       # "📥 Carregar / Atualizar Dados",
+    #       # class = "btn btn-warning"
+    #     )
+    #   ),
+      
+      mainPanel(
+        verbatimTextOutput("stat"),
+        dataTableOutput("tabela_")
+      )
+    ),
+  
   tabPanel(
     title = tagList(icon("user-shield"), "Admin"),
     
@@ -444,10 +465,93 @@ server <- function(input, output, session){
     sum(dados_filtrados()$Sexo == "Masculino", na.rm = TRUE)
   })
   
+  output$texto_resumo <- renderUI({
+    
+    df <- dados_filtrados()
+    
+    total <- nrow(df)
+    mulheres <- sum(df$Sexo == "Feminino", na.rm = TRUE)
+    homens <- sum(df$Sexo == "Masculino", na.rm = TRUE)
+    
+    distrito_sel <- input$filtro_distrito
+    
+    # Dados base por distrito
+    monapo <- Perfil_NEXUS %>% filter(Distrito == "Monapo")
+    mon_total <- nrow(monapo)
+    mon_mul <- sum(monapo$Sexo == "Feminino", na.rm = TRUE)
+    mon_hom <- sum(monapo$Sexo == "Masculino", na.rm = TRUE)
+    
+    nacala <- Perfil_NEXUS %>% filter(Distrito == "Nacala Porto")
+    nac_total <- nrow(nacala)
+    nac_mul <- sum(nacala$Sexo == "Feminino", na.rm = TRUE)
+    nac_hom <- sum(nacala$Sexo == "Masculino", na.rm = TRUE)
+    
+    # 🎨 UI
+    div(
+      style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+      
+      tags$p(
+        style = "margin: 0; text-align: justify;",
+        
+        tags$b("Fazer Prosperar:"),
+        "O projeto visa dar uma resposta transformadora às barreiras estruturais que limitam o acesso das pessoas deslocadas – particularmente mulheres e sobreviventes de violência baseada no género (VBG) – a oportunidades de geração de rendimento e inclusão económica sustentável.",
+        
+        br(), br(),
+        
+        # 🧠 TEXTO CONDICIONAL COM NEGRITO
+        if (distrito_sel == "Todos") {
+          
+          tagList(
+            "No total, foram selecionados ", tags$b(total),
+            " participantes, dos quais ", tags$b(mulheres),
+            " são mulheres e ", tags$b(homens), " homens. ",
+            
+            "No distrito de ", tags$b("Monapo"), ", registam-se ",
+            tags$b(mon_total), " participantes (",
+            tags$b(mon_mul), " mulheres e ",
+            tags$b(mon_hom), " homens). ",
+            
+            "Em ", tags$b("Nacala Porto"), ", foram selecionados ",
+            tags$b(nac_total), " participantes (",
+            tags$b(nac_mul), " mulheres e ",
+            tags$b(nac_hom), " homens), valores que se encontram refletidos nas caixas de indicadores abaixo."
+          )
+          
+        } else {
+          
+          tagList(
+            "No distrito de ", tags$b(distrito_sel), ", foram selecionados ",
+            tags$b(total), " participantes, dos quais ",
+            tags$b(mulheres), " são mulheres e ",
+            tags$b(homens), " homens, valores que se encontram refletidos nas caixas de indicadores abaixo."
+          )
+        }
+      )
+    )
+  })
+  
+  ### PERFIL DOS QUE INICIARAM A FORMACAO
+  
+  
+  participantes_ativos <- reactive({
+    
+    df <- Perfil_NEXUS
+    
+    if (input$filtro_distrito != "Todos") {
+      df <- df %>% filter(Distrito == input$filtro_distrito)
+    }
+    
+    if (input$filtro_comunidade != "Todas") {
+      df <- df %>% filter(Comunidade == input$filtro_comunidade)
+    }
+    
+    df %>%
+      filter(if_any(starts_with("Sessão"), ~ . == "Presente"))
+  })
   
   output$grafico_sexo <- renderPlotly({
     
-    df <- dados_filtrados() %>%
+    df <- participantes_ativos() %>%
       count(Sexo) %>%
       mutate(
         Sexo = factor(Sexo, levels = c("Feminino", "Masculino"))
@@ -472,11 +576,56 @@ server <- function(input, output, session){
       )
   })
   
+  output$texto_grafico_ativo <- renderUI({
+    
+    df <- participantes_ativos()
+    
+    total <- nrow(df)
+    mulheres <- sum(df$Sexo == "Feminino", na.rm = TRUE)
+    homens <- sum(df$Sexo == "Masculino", na.rm = TRUE)
+    
+    perc_mul <- round(mulheres / total * 100, 1)
+    perc_hom <- round(homens / total * 100, 1)
+    
+    distrito_sel <- input$filtro_distrito
+    
+    # 🧠 TEXTO DINÂMICO
+    div(
+      style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+      
+      tags$p(
+        style = "margin: 0; text-align: justify;",
+        
+        tags$b("Distribuição por sexo: "),
+        
+        if (distrito_sel == "Todos") {
+          
+          tagList(
+            "O gráfico apresenta a proporção de participantes que iniciaram a formação e participaram em pelo menos uma sessão. ",
+            
+            "No total, ", tags$b(total), " participantes estão ativos, dos quais ",
+            tags$b(mulheres), " (", tags$b(paste0(perc_mul, "%")), ") são mulheres e ",
+            tags$b(homens), " (", tags$b(paste0(perc_hom, "%")), ") homens."
+          )
+          
+        } else {
+          
+          tagList(
+            "No distrito de ", tags$b(distrito_sel), ", o gráfico apresenta a proporção de participantes que participaram em pelo menos uma sessão. ",
+            
+            "Registam-se ", tags$b(total), " participantes ativos, dos quais ",
+            tags$b(mulheres), " (", tags$b(paste0(perc_mul, "%")), ") são mulheres e ",
+            tags$b(homens), " (", tags$b(paste0(perc_hom, "%")), ") homens."
+          )
+        }
+      )
+    )
+  })
   
   # GRÁFICO DISTRITO – PERCENTUAL GERAL
   output$grafico_distrito <- renderPlotly({
     
-    df <- dados_filtrados() %>%
+    df <- participantes_ativos() %>%
       count(Situacao_Participante, Sexo) %>%
       ungroup() %>%
       mutate(
@@ -505,14 +654,14 @@ server <- function(input, output, session){
         paper_bgcolor = "#f5f3f4",
         plot_bgcolor  = "#f5f3f4",
         xaxis = list(title = ""),
-        yaxis = list(title = "Número de participantes", range = c(0, 400))
+        yaxis = list(title = "Número de participantes", range = c(0, 300))
       )
   })
   
   # GRÁFICO NEGÓCIO – PERCENTUAL GERAL
   output$grafico_Negocio <- renderPlotly({
     
-    df <- dados_filtrados() %>%
+    df <- participantes_ativos() %>%
       count(Tem_Negocio, Sexo) %>%
       ungroup() %>%
       mutate(
@@ -548,7 +697,7 @@ server <- function(input, output, session){
   # GRÁFICO POUPANÇA – PERCENTUAL GERAL
   output$grafico_Poupa <- renderPlotly({
     
-    df <- dados_filtrados() %>%
+    df <- participantes_ativos() %>%
       count(Faz_Poupanca, Sexo) %>%
       ungroup() %>%
       mutate(
@@ -567,7 +716,7 @@ server <- function(input, output, session){
       type = "bar",
       text = ~label,
       textposition = "auto",
-      textfont = list(size=14, color="black"),
+      textfont = list(size=14, color="white"),
       hoverinfo = "y+text+name"
     ) %>%
       layout(
@@ -584,9 +733,9 @@ server <- function(input, output, session){
   # GRÁFICO ESCOLARIDADE – PERCENTUAL GERAL
   output$grafico_Escolaridade <- renderPlotly({
     
-    req(dados_filtrados())
+    req(participantes_ativos())
     
-    df <- dados_filtrados() %>%
+    df <- participantes_ativos() %>%
       filter(!is.na(Nivil_Educacao), !is.na(Sexo)) %>%
       count(Nivil_Educacao, Sexo) %>%
       ungroup() %>%
@@ -630,16 +779,16 @@ server <- function(input, output, session){
         paper_bgcolor = "#f5f3f4",
         plot_bgcolor  = "#f5f3f4",
         xaxis = list(title = "", tickangle = -20),
-        yaxis = list(title = "Número de participantes", range = c(0, 400))
+        yaxis = list(title = "Número de participantes", range = c(0, 150))
       )
   })
   
   # GRÁFICO ESTADO CIVIL – PERCENTUAL GERAL
   output$grafico_Estado_Civil <- renderPlotly({
     
-    req(dados_filtrados())
+    req(participantes_ativos())
     
-    df <- dados_filtrados() %>%
+    df <- participantes_ativos() %>%
       filter(!is.na(Estado_Civil), !is.na(Sexo)) %>%
       count(Estado_Civil, Sexo) %>%
       ungroup() %>%
@@ -678,7 +827,7 @@ server <- function(input, output, session){
         paper_bgcolor = "#f5f3f4",
         plot_bgcolor  = "#f5f3f4",
         xaxis = list(title = ""),
-        yaxis = list(title = "Número de participantes", range = c(0, 400))
+        yaxis = list(title = "Número de participantes", range = c(0, 200))
       )
   })
  
@@ -687,7 +836,7 @@ server <- function(input, output, session){
   
   output$grafico_Negocios <- renderPlotly({
     
-    dados_negocios <- Perfil_NEXUS %>%
+    dados_negocios <- participantes_ativos %>%
       group_by(tipo_neg) %>%
       summarise(Quantidade = n(), .groups = "drop") %>%
       arrange(desc(Quantidade)) %>%  # 👈 maior → menor
