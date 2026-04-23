@@ -56,19 +56,19 @@ library(shinycssloaders)
 # 
 # ############ ORGANIZAR O PERFIL DE NACALA PORTO
 # Lista_Nacala_Porto_Turmas <- read_excel("Lista_Nacala_Porto_Turmas.xlsx")
-#  
-# # duplicados_todas_colunas <- Lista_Nacala_Porto_Turmas %>%
-# #   filter(duplicated(.))
-# # 
-# # duplicados <- Lista_Nacala_Porto_Turmas %>%
-# #   group_by(nome) %>%
-# #   filter(n() > 1) %>%
-# #   arrange(nome)
-# # 
-# # nomes_duplicados1 <- Lista_Nacala_Porto_Turmas %>%
-# #   count(nome) %>%
-# #   filter(n > 1)
-# # 
+
+# duplicados_todas_colunas <- Lista_Nacala_Porto_Turmas %>%
+#   filter(duplicated(.))
+#
+# duplicados <- Lista_Nacala_Porto_Turmas %>%
+#   group_by(nome) %>%
+#   filter(n() > 1) %>%
+#   arrange(nome)
+#
+# nomes_duplicados1 <- Lista_Nacala_Porto_Turmas %>%
+#   count(nome) %>%
+#   filter(n > 1)
+#
 # Perfil_Nacala_Porto <- Perfil %>%
 #   filter(Distrito == "Nacala Porto")
 # #
@@ -115,7 +115,7 @@ library(shinycssloaders)
 # 
 # Perfil_Monapo_unico <- Perfil_Monapo %>%
 #   group_by(Nome_participante) %>%
-#   slice(1) %>%  
+#   slice(1) %>%
 #   ungroup() %>%
 #   arrange(Nome_participante)
 # 
@@ -157,7 +157,7 @@ library(shinycssloaders)
 #   select(-c(4, 11, 13, 14, 15, 16, 18, 22,74, 75, 76, 77, 79, 80, 81, 82))
 # 
 # table(Perfil_NEXUS$Comunidade)
-
+# 
 
 # write_xlsx(
 #   Perfil_NEXUS,
@@ -237,12 +237,17 @@ sessao_cols_ordenadas <- sessao_cols[order(as.numeric(gsub("Sessão_?", "", sess
 
 Perfil_NEXUS <- Presencas_Nexus
 
+Duplicados_Perfi <- Perfil_NEXUS %>%
+  group_by(Nome_participante) %>%
+  filter(n() > 1) %>%
+  arrange(Nome_participante)
+
 # table(Perfil_NEXUS$tipo_neg)
-# 
-# Perfil_NEXUS <- Perfil_NEXUS %>%
+# # 
+# Perfil <- Perfil_NEXUS %>%
 #   mutate(
 #     tipo_neg = case_when(
-#       
+# 
 #       # Grupo 1
 #       tipo_neg %in% c(
 #         "AGENTE DE CARTEIRA MOVEL (EMOLA)",
@@ -251,7 +256,7 @@ Perfil_NEXUS <- Presencas_Nexus
 #         "AGENTE EMOLA",
 #         "AGENTES E-MOLA"
 #       ) ~ "AGENTE DE CARTEIRA MÓVEL",
-#       
+# 
 #       tipo_neg %in% c(
 #         "VENDA DE ARTIGO DE ROUPA",
 #         "VENDA DE ROUPAS USADAS ( CALAMIDADE)",
@@ -259,7 +264,7 @@ Perfil_NEXUS <- Presencas_Nexus
 #         # "AGENTE EMOLA",
 #         # "AGENTES E-MOLA"
 #       ) ~ "VENDA DE ROUPA DA CALAMIDADE",
-#       
+# 
 #       # # Grupo 2
 #       tipo_neg %in% c(
 #         "MERCEARIA ( VENDA DE PRODUTOS DIVERSOS)",
@@ -273,39 +278,39 @@ Perfil_NEXUS <- Presencas_Nexus
 #         "VENDO ALIMENTARES.",
 #          "VENDA DE ALIMENTOS."
 #       ) ~ "VENDA DE PRODUTOS NA MERCEARIA",
-#       
+# 
 #       tipo_neg %in% c(
 #         "VENDA DE BADJIAS",
 #         "VENDE BADJIAS",
 #         "VENDA PRODUTOS ALIMENTARES (BADJIAS",
 #         "VENDA DE BADJIA E MAHEU"
 #       ) ~ "VENDA DE BADJIA",
-#       
+# 
 #       tipo_neg %in% c(
 #         "VENDA DE PEIXE E BOLINHOS",
 #         "VENDA DE PEIXES FRESCOS.",
 #         "VENDA DE PEIXE (NICUSE)",
 #         "VENDA DE PEIXE FRESCO E SECO"
 #       ) ~ "VENDA DE PEIXE",
-#       
+# 
 #       tipo_neg %in% c(
 #         "VENDAS DE REFEICOES",
 #         "VENDA DE COMIDA COZIDA",
 #         "VENDA DE COMIDA"
 #       ) ~ "VENDA DE REFEIÇÕES",
-#       
+# 
 #       tipo_neg %in% c(
 #         "VENDA DE FEIJAO BUERE",
 #         "VENDA DE FEIJAO FAVA",
 #         "VENDA DE FEIJAO"
 #       ) ~ "VENDA DE FEIJAO",
-#       
+# 
 #       tipo_neg %in% c(
 #         "VENDA DE BEBIDAS CASEIRAS /TRADITIONAL",
 #         "VENDE CERVEJA",
 #         "FACO TAXI MOTA E VENDO BEBIDAS NO BAR"
 #       ) ~ "VENDA DE BEBIDAS",
-#       
+# 
 #       tipo_neg %in% c(
 #         "BOLINHOS",
 #         "VENDO BOLINHOS",
@@ -315,34 +320,34 @@ Perfil_NEXUS <- Presencas_Nexus
 #         "VENDO BOLINHOS E CHINELOS",
 #         "VENDA DE PRODUTOS ALIMENTARES (BOLINHOS)"
 #       ) ~ "VENDA DE BOLINHOS",
-#       
+# 
 #       tipo_neg %in% c(
 #         "VENDE ROFADAS E FAZ BISCATOS NAS MACHAMBAS",
 #          "VENDO ROFADAS",
 #          "VENDA DE ROFODAS"
 #       ) ~ "VENDA DE ARRUFADAS",
-#       
+# 
 #       tipo_neg %in% c(
 #         # "VENDA DE CARVAO , BOLINHOS, ARROZ",
 #         "VENDA DE CARVAO",
 #         "PRODUCAO E VENDA DE CARVAO VEGETAL"
 #       ) ~ "VENDA DE CARVAO",
-#       
+# 
 #       tipo_neg %in% c(
 #         "PRESTO SERVICOS EM CAPINAR MACHAMBAS DAS PESSOAS."
 #       ) ~ "SERVICO DE CAPINAR",
-#       
+# 
 #       tipo_neg %in% c(
 #         "TAXI"
 #       ) ~ "SERVICO DE TAXI",
-#       
+# 
 #       tipo_neg %in% c(
 #         "VENDA DE CARVAO , BOLINHOS, ARROZ",
 #         "VENDA DE REFRESCOS",
 #         "VENDA DE FROZY E AGUA"
 #       ) ~ "VENDA DE REFREGERANTES",
-#       
-#       
+# 
+# 
 #       # Grupo 3
 #       tipo_neg %in% c(
 #         "COSTURQ",
@@ -350,14 +355,14 @@ Perfil_NEXUS <- Presencas_Nexus
 #         "CORTE E COSTURA.",
 #         "ALFAIATE"
 #       ) ~ "CORTE E COSTURA",
-#       
+# 
 #       TRUE ~ tipo_neg
 #     )
 #   )
 # 
 # table(Perfil_NEXUS$tipo_neg)
 # 
-# 
+
 
 
 

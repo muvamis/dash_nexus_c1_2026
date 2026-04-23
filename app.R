@@ -69,14 +69,6 @@ ui <- navbarPage(
       ),
       
       mainPanel(
-        # div(
-        #   style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
-        #   tags$p(
-        #     style = "margin: 0; text-align: justify;",
-        #     tags$b("Fazer Prosperar. "),
-        #     "O projeto visa dar uma resposta transformadora às barreiras estruturais que limitam o acesso das pessoas deslocadas – particularmente mulheres,  e sobreviventes de violência baseada no género (VBG) – a oportunidades de geração de rendimento e inclusão económica sustentável."
-        #   )
-        # ),
         uiOutput("texto_resumo"),
         div(
           class = "value-box-container",
@@ -99,14 +91,6 @@ ui <- navbarPage(
         fluidRow(
           column(
             6,
-            # div(
-            #   style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
-            #   tags$p(
-            #     style = "margin: 0; text-align: justify;",
-            #     tags$b("Distribuição Por sexo:"),
-            #     "O gráfico abaixo apresenta a Proporção de participantes que iniciaram a formação 'participaram em pelo menos uma sessão'."
-            #   )
-            # ),
             uiOutput("texto_grafico_ativo"),
             plotlyOutput("grafico_sexo")
           ),
@@ -227,29 +211,14 @@ ui <- navbarPage(
           ),
           
           mainPanel(
-            div(
-              style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
-              tags$p(
-                style = "margin: 0; text-align: justify;",
-                tags$b(""),
-                "O gráfico a seguir ilustra o número de participantes presentes em cada uma das sessões colectivas.
-                                                A linha roxa representa o total previsto de participantes por sessão."
-              )
-            ),
-
+            uiOutput("texto_participacao_sessoes"),
+            br(),
             # downloadButton("baixarBasePresencasExcel", "Baixar Presenças"),
             withSpinner(plotlyOutput("graficoParticipacaoGlobal", height = "500px")),
             br(), br(),
-            div(
-              style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
-              tags$p(
-                style = "margin: 0; text-align: justify;",
-                tags$b(""),
-                " O gráfico mostra a proporção de participação por sessão, separada por sexo. 
-                    Cada linha indica a porcentagem de participantes presentes em relação ao total previsto, permitindo comparar o engajamento de participantes femininos e masculinos ao longo das sessões."
-              )
-            ),
-           
+       
+            uiOutput("texto_participacao_sexo"),
+            br(),
             withSpinner(plotlyOutput("graficoParticipacaoSexo", height = "400px"))
           )
         )
@@ -278,6 +247,21 @@ ui <- navbarPage(
           ),
           
           mainPanel(
+            fluidRow(
+              column(
+                6,
+                uiOutput("texto_grafico_N"),
+                br(),
+                plotlyOutput("grafico_N")
+              ),
+              column(
+                6,
+                uiOutput("texto_situacao_interpretacao"),
+                br(),
+                plotlyOutput("grafico_situacao_C")
+              )
+            ),
+            br(),
             div(
               style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
               tags$p(
@@ -839,8 +823,8 @@ server <- function(input, output, session){
     dados_negocios <- participantes_ativos %>%
       group_by(tipo_neg) %>%
       summarise(Quantidade = n(), .groups = "drop") %>%
-      arrange(desc(Quantidade)) %>%  # 👈 maior → menor
-      mutate(tipo_neg = factor(tipo_neg, levels = tipo_neg))  # 👈 fixa ordem
+      arrange(desc(Quantidade)) %>%  
+      mutate(tipo_neg = factor(tipo_neg, levels = tipo_neg))  
     
     plot_ly(
       data = dados_negocios,
@@ -864,7 +848,7 @@ server <- function(input, output, session){
 #   
 #   # SESSÕES COLECTIVAS
 
-    # 1️⃣ Atualiza Comunidades com base no Distrito selecionado
+   
     observe({
       req(input$distritoInput_namp_pi)
       
@@ -882,8 +866,7 @@ server <- function(input, output, session){
         selected = "TODAS"
       )
     })
-    
-    # 2️⃣ Atualiza Facilitadores com base na Comunidade selecionada
+  
     observe({
       req(input$comunidadeInput_namp_pi)
       
@@ -901,7 +884,7 @@ server <- function(input, output, session){
       )
     })
     
-    # 3️⃣ Dados filtrados reativos
+ 
     dados_filtrados_presencas <- reactive({
       df <- Presencas_Nexus
       if (input$distritoInput_namp_pi != "TODOS") df <- df %>% filter(Distrito == input$distritoInput_namp_pi)
@@ -910,20 +893,19 @@ server <- function(input, output, session){
       df
     })
     
-    # 4️⃣ Gráfico de participação por sessões
+  
     output$graficoParticipacaoGlobal <- renderPlotly({
-      df <- dados_filtrados_presencas()  # ⚠️ Sempre com parênteses!
+      df <- dados_filtrados_presencas() 
       
       if (nrow(df) == 0) {
         showNotification("Nenhum dado disponível para os filtros selecionados.", type = "warning")
         return(NULL)
       }
       
-      # Identificar colunas de Sessão
+     
       sessao_cols <- names(df)[grepl("^Sessão_?\\d+$", names(df))]
       sessao_cols_ordenadas <- sessao_cols[order(as.numeric(gsub("Sessão_?", "", sessao_cols)))]
       
-      # Transformar para formato long
       df_long <- df %>%
         tidyr::pivot_longer(
           cols = all_of(sessao_cols_ordenadas),
@@ -940,15 +922,12 @@ server <- function(input, output, session){
         arrange(Sessao_Num) %>%
         mutate(Sessao = factor(Sessao, levels = sessao_cols_ordenadas))
       
-      # Totais por sessão
       totais_sessao <- df_long %>%
         group_by(Sessao) %>%
         summarise(total = sum(Count), .groups = "drop")
       
-      # Linha de referência
       linha_referencia <- if (input$distritoInput_namp_pi == "TODOS") 400 else 200
       
-      # Annotations para cada segmento
       df_long <- df_long %>%
         group_by(Sessao) %>%
         arrange(Sexo) %>%
@@ -978,8 +957,7 @@ server <- function(input, output, session){
       })
       
       all_annotations <- c(annotations_segmentos, annotations_totais)
-      
-      # Plotly stacked bar
+    
       plot_ly(
         data = df_long,
         x = ~Sessao,
@@ -1009,29 +987,112 @@ server <- function(input, output, session){
           annotations = all_annotations
         )
     })
-  
+    
+    output$texto_participacao_sessoes <- renderUI({
+      
+      df <- dados_filtrados_presencas()
+      
+      # ================================
+      # 🎯 META DINÂMICA
+      # ================================
+      meta_total <- if (input$distritoInput_namp_pi == "TODOS") 400 else 200
+      
+      sessoes_cols <- names(df)[grepl("^Sessão_?\\d+$", names(df))]
+      
+      sessoes_data <- df[, sessoes_cols]
+      
+      presencas_por_sessao <- colSums(sessoes_data == "Presente", na.rm = TRUE)
+      
+      sessao_max <- names(which.max(presencas_por_sessao))
+      valor_max <- max(presencas_por_sessao)
+      
+      sessao_min <- names(which.min(presencas_por_sessao))
+      valor_min <- min(presencas_por_sessao)
+      
+      sessoes_atingiram <- names(presencas_por_sessao[presencas_por_sessao >= meta_total])
+      
+      media_sessoes <- mean(presencas_por_sessao)
+      
+      # ================================
+      # 📌 CASO 1: TODOS
+      # ================================
+      if (input$distritoInput_namp_pi == "TODOS") {
+        
+        texto <- paste0(
+          
+          "A análise global do programa, considerando todos os distritos, ",
+          "define uma meta de <b>", meta_total, "</b> participantes por sessão. ",
+          
+          "A sessão com maior participação foi <b>", sessao_max, "</b> com <b>", valor_max, "</b> presenças, ",
+          "enquanto a menor participação ocorreu na <b>", sessao_min, "</b> com <b>", valor_min, "</b> presenças. ",
+          
+          if (length(sessoes_atingiram) > 0) {
+            paste0("A(s) sessão(ões) que atingiu(aram) a meta foram: <b>",
+                   paste(sessoes_atingiram, collapse = ", "),
+                   "</b>. ")
+          } else {
+            "Nenhuma sessão atingiu a meta estabelecida. "
+          },
+          
+          "Em média, as sessões registaram <b>", round(media_sessoes, 1), "</b> presenças."
+        )
+        
+      } else {
+        
+        # ================================
+        # 📌 CASO 2: DISTRITO SELECIONADO
+        # ================================
+        
+        distrito <- input$distritoInput_namp_pi
+        
+        total_participantes <- nrow(df)
+        
+        texto <- paste0(
+          
+          "No distrito de <b>", distrito, "</b>, a análise das sessões ",
+          "considera uma meta de <b>", meta_total, "</b> participantes por sessão. ",
+          
+          "Registam-se <b>", total_participantes, "</b> participantes no universo filtrado. ",
+          
+          "A sessão com maior participação foi <b>", sessao_max, "</b> com <b>", valor_max, "</b> presenças, ",
+          "enquanto a menor participação ocorreu na <b>", sessao_min, "</b> com <b>", valor_min, "</b> presenças. ",
+          
+          if (length(sessoes_atingiram) > 0) {
+            paste0("A(s) sessão(ões) que atingiu(aram) a meta foram: <b>",
+                   paste(sessoes_atingiram, collapse = ", "),
+                   "</b>. ")
+          } else {
+            "Nenhuma sessão atingiu a meta estabelecida. "
+          },
+          
+          "Em média, as sessões registaram <b>", round(media_sessoes, 1), "</b> presenças no distrito."
+        )
+      }
+      
+      HTML(paste0(
+        "<div style='background:#f5f3f4; padding:12px; border-radius:6px;'>",
+        texto,
+        "</div>"
+      ))
+    })
     ###################### PARTICIPACAO POR SEXO ##################  
   
     output$graficoParticipacaoSexo <- renderPlotly({
       
-      df <- dados_filtrados_presencas()  # ⚠️ usar parênteses, pois é reativo
+      df <- dados_filtrados_presencas()  
       
-      # Garantir que há dados
       if (nrow(df) == 0) {
         showNotification("Nenhum dado disponível para os filtros selecionados.", type = "warning")
         return(NULL)
       }
-      
-      # Identificar colunas de sessão
+  
       sessao_cols <- names(df)[grepl("^Sessão_?\\d+$", names(df))]
       sessao_cols_ordenadas <- sessao_cols[order(as.numeric(gsub("Sessão_?", "", sessao_cols)))]
-      
-      # Contar total de participantes por sexo
+    
       previstos <- df %>%
         group_by(Sexo) %>%
         summarise(Previsto = n(), .groups = "drop")
-      
-      # Transformar dados em formato long
+    
       df_long <- df %>%
         tidyr::pivot_longer(
           cols = all_of(sessao_cols_ordenadas),
@@ -1046,26 +1107,22 @@ server <- function(input, output, session){
           Porcentagem = Count / Previsto * 100
         )
       
-      # Ordenar sessões
       df_long <- df_long %>%
         mutate(
           Sessao_Num = as.numeric(gsub("Sessão_?", "", Sessao)),
           Sessao = factor(Sessao, levels = sessao_cols_ordenadas)
         ) %>%
         arrange(Sessao_Num)
-      
-      # Alternar vertical dos textos para não sobrepor
+     
       df_long <- df_long %>%
         mutate(textpos = ifelse(Sexo == "Feminino", "top center", "bottom center"))
       
-      # Cores por sexo
+      
       cores_legenda <- c("Feminino" = "#9942D4", "Masculino" = "#F77333")
-      
-      # Calcular máximo percentual no dataset
+     
       max_porcentagem <- max(df_long$Porcentagem, na.rm = TRUE)
-      limite_y <- ifelse(max_porcentagem + 10 > 100, max_porcentagem + 10, 110)  # garante no mínimo 110
-      
-      # Criar gráfico Plotly com limite ajustado
+      limite_y <- ifelse(max_porcentagem + 10 > 100, max_porcentagem + 10, 110)  
+     
       plot_ly(
         data = df_long,
         x = ~Sessao,
@@ -1091,6 +1148,60 @@ server <- function(input, output, session){
           yaxis = list(title = "Percentual (%)", range = c(0, limite_y), tickfont = list(size = 12)),
           legend = list(title = list(text = "<b>Sexo</b>"))
         )
+    })
+    
+    output$texto_participacao_sexo <- renderUI({
+      
+      df <- dados_filtrados_presencas()
+      
+      sessoes_cols <- names(df)[grepl("^Sessão_?\\d+$", names(df))]
+      
+      previstos <- df %>%
+        dplyr::count(Sexo) %>%
+        dplyr::rename(Previsto = n)
+      
+      df_long <- df %>%
+        tidyr::pivot_longer(
+          cols = all_of(sessoes_cols),
+          names_to = "Sessao",
+          values_to = "Presenca"
+        ) %>%
+        dplyr::filter(Presenca == "Presente") %>%
+        dplyr::group_by(Sessao, Sexo) %>%
+        dplyr::summarise(Count = n(), .groups = "drop") %>%
+        dplyr::left_join(previstos, by = "Sexo") %>%
+        dplyr::mutate(Porcentagem = (Count / Previsto) * 100)
+      
+      # médias por sexo ao longo das sessões
+      media_sexo <- df_long %>%
+        dplyr::group_by(Sexo) %>%
+        dplyr::summarise(media = mean(Porcentagem, na.rm = TRUE))
+      
+      sessoes_medias <- df_long %>%
+        dplyr::group_by(Sessao) %>%
+        dplyr::summarise(total = sum(Count), .groups = "drop")
+      
+      sessao_max <- sessoes_medias %>% dplyr::slice_max(total, n = 1)
+      sessao_min <- sessoes_medias %>% dplyr::slice_min(total, n = 1)
+      
+      texto <- paste0(
+        
+        "O gráfico apresenta a evolução da participação por sessão, desagregada por sexo, ",
+        "permitindo analisar o comportamento de adesão ao longo do processo formativo. ",
+        
+        "Em média, as mulheres registam <b>", round(media_sexo$media[media_sexo$Sexo == "Feminino"], 1), "%</b> ",
+        "de participação e os homens <b>", round(media_sexo$media[media_sexo$Sexo == "Masculino"], 1), "%</b>. ",
+        
+        "A sessão com maior participação global é <b>", sessao_max$Sessao, "</b>, ",
+        "enquanto a menor participação ocorre na <b>", sessao_min$Sessao, "</b>, ",
+        "indicando variações no nível de engajamento ao longo das sessões."
+      )
+      
+      HTML(paste0(
+        "<div style='background:#f5f3f4; padding:12px; border-radius:6px;'>",
+        texto,
+        "</div>"
+      ))
     })
     
     ################################ ACOMPANHAMENTO ################################## 
@@ -1208,6 +1319,316 @@ server <- function(input, output, session){
           columnDefs = list(list(className = "dt-center", targets = "_all"))
         )
       )
+    })
+    
+   ####### Participantes que concluiram a formacao PI 
+    
+    # ================================
+    # 📊 BASE FILTRADA
+    # ================================
+    dados_filtrados <- reactive({
+      
+      df <- Presencas_Nexus
+      
+      if (input$distritoInput_ != "TODOS") {
+        df <- df %>% dplyr::filter(Distrito == input$distritoInput_)
+      }
+      
+      if (input$comunidadeAcompanhamento != "TODAS") {
+        df <- df %>% dplyr::filter(Comunidade == input$comunidadeAcompanhamento)
+      }
+      
+      if (input$facilitadorInput != "TODOS") {
+        df <- df %>% dplyr::filter(Facilitadores == input$facilitadorInput)
+      }
+      
+      df
+    })
+    
+    # ================================
+    # 📊 CLASSIFICAÇÃO DE CONCLUSÃO
+    # ================================
+    participantes_concluintes <- reactive({
+      
+      df <- dados_filtrados()
+      
+      sessoes <- df %>% 
+        dplyr::select(starts_with("Sessão"))
+      
+      df$total_presencas <- rowSums(sessoes == "Presente", na.rm = TRUE)
+      
+      df$concluiu <- ifelse(df$total_presencas >= 8, "Concluiu", "Não concluiu")
+      
+      df
+    })
+    
+    # =====================================================
+    # 📊 GRÁFICO 1 — CONCLUINTES POR DISTRITO E SEXO
+    # =====================================================
+    dados_grafico <- reactive({
+      
+      participantes_concluintes() %>%
+        dplyr::filter(concluiu == "Concluiu") %>%
+        dplyr::count(Distrito, Sexo) %>%
+        dplyr::group_by(Distrito) %>%
+        dplyr::mutate(
+          percent = (n / sum(n)) * 100,
+          label = paste0(n, "<br>", round(percent, 1), "%")
+        ) %>%
+        dplyr::ungroup()
+    })
+    
+    limite_y <- reactive({
+      max(dados_grafico()$percent, na.rm = TRUE) * 1.2
+    })
+    
+    output$grafico_N <- renderPlotly({
+      
+      plot_ly(
+        data = dados_grafico(),
+        x = ~Distrito,
+        y = ~percent,
+        color = ~Sexo,
+        colors = c("Feminino" = "#9942D4", "Masculino" = "#F77333"),
+        type = "bar",
+        text = ~label,
+        textposition = "outside",
+        cliponaxis = FALSE
+      ) %>%
+        layout(
+          title = list(
+            text = "",
+            font = list(size = 16)
+          ),
+          paper_bgcolor = "#f5f3f4",
+          plot_bgcolor = "#f5f3f4",
+          xaxis = list(
+            title = "Distrito",
+            tickfont = list(size = 12)
+          ),
+          yaxis = list(
+            title = "Percentual (%)",
+            range = c(0, limite_y()),
+            tickfont = list(size = 12)
+          ),
+          legend = list(title = list(text = "<b>Sexo</b>")),
+          barmode = "group"
+        )
+    })
+    
+    output$texto_grafico_N <- renderUI({
+      
+      df_base <- participantes_concluintes() %>%
+        dplyr::filter(concluiu == "Concluiu")
+      
+      distrito_sel <- input$distritoInput_
+      
+      # ================================
+      # 📌 CASO 1: TODOS
+      # ================================
+      if (distrito_sel == "TODOS") {
+        
+        total_geral <- nrow(df_base)
+        
+        distritos <- df_base %>%
+          dplyr::count(Distrito) %>%
+          dplyr::mutate(percent = (n / sum(n)) * 100) %>%
+          dplyr::arrange(desc(n))
+        
+        top <- distritos %>% dplyr::slice(1)
+        
+        sexo_geral <- df_base %>%
+          dplyr::count(Sexo) %>%
+          dplyr::mutate(percent = (n / sum(n)) * 100)
+        
+        fem <- sexo_geral$percent[sexo_geral$Sexo == "Feminino"]
+        masc <- sexo_geral$percent[sexo_geral$Sexo == "Masculino"]
+        
+        texto <- paste0(
+          "Consideram-se concluintes todos os participantes que participaram em pelo menos 8 das 12 sessões previstas. ",
+          "No total, registam-se <b>", total_geral, "</b> concluintes (",
+          round(sexo_geral$n[sexo_geral$Sexo == "Feminino"]), " mulheres e ",
+          round(sexo_geral$n[sexo_geral$Sexo == "Masculino"]), " homens). ",
+          
+          "O distrito com maior representação é <b>", top$Distrito, "</b> com <b>", round(top$percent, 1), "%</b>."
+        )
+        
+      } else {
+        
+        # ================================
+        # 📌 CASO 2: DISTRITO SELECIONADO
+        # ================================
+        
+        df_dist <- df_base %>%
+          dplyr::filter(Distrito == distrito_sel)
+        
+        total_dist <- nrow(df_dist)
+        
+        sexo_dist <- df_dist %>%
+          dplyr::count(Sexo) %>%
+          dplyr::mutate(percent = (n / sum(n)) * 100)
+        
+        fem <- sexo_dist$percent[sexo_dist$Sexo == "Feminino"]
+        masc <- sexo_dist$percent[sexo_dist$Sexo == "Masculino"]
+        
+        texto <- paste0(
+          "No total, registam-se <b>", total_dist, "</b> concluintes do distrito de <b>", distrito_sel, "</b>, ",
+          "com <b>", round(fem, 1), "%</b> feminino e <b>", round(masc, 1), "%</b> masculino."
+        )
+      }
+      
+      HTML(paste0(
+        "<div style='background:#f5f3f4; padding:12px; border-radius:6px;'>",
+        texto,
+        "</div>"
+      ))
+    })
+    
+    
+    # =====================================================
+    # 📊 GRÁFICO 2 — SITUAÇÃO DOS CONCLUINTES
+    # =====================================================
+    dados_situacao <- reactive({
+      
+      df <- participantes_concluintes() %>%
+        dplyr::filter(concluiu == "Concluiu")
+      
+      total_geral <- nrow(df)
+      
+      df %>%
+        dplyr::count(Situacao_Participante, Sexo) %>%
+        dplyr::mutate(
+          percent_global = (n / total_geral) * 100,
+          label = paste0(n, " (", round(percent_global, 1), "%)")
+        )
+    })
+    
+    limite_y_situacao <- reactive({
+      100
+    })
+    
+    output$grafico_situacao_C <- renderPlotly({
+      
+      plot_ly(
+        data = dados_situacao(),
+        x = ~Situacao_Participante,
+        y = ~n,   # ✔ valores reais
+        color = ~Sexo,
+        colors = c("Feminino" = "#9942D4", "Masculino" = "#F77333"),
+        type = "bar",
+        
+        text = ~label,
+        
+        textposition = "inside",
+        insidetextanchor = "middle",
+        
+        textfont = list(
+          size = 12,
+          color = "white"
+        ),
+        
+        hovertemplate = paste(
+          "<b>Situação:</b> %{x}<br>",
+          "<b>Sexo:</b> %{color}<br>",
+          "<b>Valor:</b> %{y}<br>",
+          "<b>% do total geral:</b> %{customdata:.1f}%<extra></extra>"
+        ),
+        
+        customdata = ~percent_global
+      ) %>%
+        layout(
+          title = list(text = ""),
+          
+          paper_bgcolor = "#f5f3f4",
+          plot_bgcolor = "#f5f3f4",
+          
+          xaxis = list(
+            title = "Situação do Participante",
+            tickangle = -25
+          ),
+          
+          yaxis = list(
+            title = "Número de Participantes"
+          ),
+          
+          legend = list(title = list(text = "<b>Sexo</b>")),
+          barmode = "stack"
+        )
+    })
+    
+    output$texto_situacao_interpretacao <- renderUI({
+      
+      df_base <- participantes_concluintes() %>%
+        dplyr::filter(concluiu == "Concluiu")
+      
+      distrito_sel <- input$distritoInput_
+      
+      # ================================
+      # 📌 CASO 1: TODOS
+      # ================================
+      if (distrito_sel == "TODOS") {
+        
+        total_geral <- nrow(df_base)
+        
+        sexo_geral <- df_base %>%
+          dplyr::count(Sexo)
+        
+        situacao_geral <- df_base %>%
+          dplyr::count(Situacao_Participante) %>%
+          dplyr::mutate(percent = (n / sum(n)) * 100)
+        
+        texto <- paste0(
+          "No total, registam-se <b>", total_geral, "</b> concluintes ",
+          "(<b>", sexo_geral$n[sexo_geral$Sexo == "Feminino"], "</b> mulheres e ",
+          "<b>", sexo_geral$n[sexo_geral$Sexo == "Masculino"], "</b> homens). ",
+          
+          "Em termos de situação dos concluintes, observa-se a seguinte distribuição: ",
+          paste0(
+            situacao_geral$Situacao_Participante,
+            " (", round(situacao_geral$percent, 1), "%)",
+            collapse = ", "
+          ),
+          "."
+        )
+        
+      } else {
+        
+        # ================================
+        # 📌 CASO 2: DISTRITO SELECIONADO
+        # ================================
+        
+        df_dist <- df_base %>%
+          dplyr::filter(Distrito == distrito_sel)
+        
+        total_dist <- nrow(df_dist)
+        
+        sexo_dist <- df_dist %>%
+          dplyr::count(Sexo)
+        
+        situacao_dist <- df_dist %>%
+          dplyr::count(Situacao_Participante) %>%
+          dplyr::mutate(percent = (n / sum(n)) * 100)
+        
+        texto <- paste0(
+          "No distrito de <b>", distrito_sel, "</b>, registam-se <b>", total_dist, "</b> concluintes ",
+          "(<b>", sexo_dist$n[sexo_dist$Sexo == "Feminino"], "</b> mulheres e ",
+          "<b>", sexo_dist$n[sexo_dist$Sexo == "Masculino"], "</b> homens). ",
+          
+          "Em termos de situação dos concluintes, observa-se a seguinte distribuição: ",
+          paste0(
+            situacao_dist$Situacao_Participante,
+            " (", round(situacao_dist$percent, 1), "%)",
+            collapse = ", "
+          ),
+          "."
+        )
+      }
+      
+      HTML(paste0(
+        "<div style='background:#f5f3f4; padding:12px; border-radius:6px;'>",
+        texto,
+        "</div>"
+      ))
     })
     ############# GRANTS
     
