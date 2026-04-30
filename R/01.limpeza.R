@@ -237,10 +237,10 @@ sessao_cols_ordenadas <- sessao_cols[order(as.numeric(gsub("Sessão_?", "", sess
 
 Perfil_NEXUS <- Presencas_Nexus
 
-Duplicados_Perfi <- Perfil_NEXUS %>%
-  group_by(Nome_participante) %>%
-  filter(n() > 1) %>%
-  arrange(Nome_participante)
+# Duplicados_Perfi <- Perfil_NEXUS %>%
+#   group_by(Nome_participante) %>%
+#   filter(n() > 1) %>%
+#   arrange(Nome_participante)
 
 # table(Perfil_NEXUS$tipo_neg)
 # # 

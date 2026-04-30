@@ -262,16 +262,10 @@ ui <- navbarPage(
               )
             ),
             br(),
-            div(
-              style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
-              tags$p(
-                style = "margin: 0; text-align: justify;",
-                tags$b(""),
-                "A tabela a seguir ilustra a participação nas sessões colectivas: Os pontos roxos indicam a presença dos participantes em cada sessão, os pontos vermelhos indicam a ausência e cinzas 
-                                                indicam dados faltantes/Não Preenchidos."
-              )
-            ),
             uiOutput("pontosPresenca"),
+            br(),
+            uiOutput("texto_presencas"),
+            br(),
             dataTableOutput("tabelaPresencas")
           )
         )
@@ -587,7 +581,7 @@ server <- function(input, output, session){
           tagList(
             "O gráfico apresenta a proporção de participantes que iniciaram a formação e participaram em pelo menos uma sessão. ",
             
-            "No total, ", tags$b(total), " participantes estão ativos, dos quais ",
+            "No total, ", tags$b(total), " participantes iniciaram a formação, dos quais ",
             tags$b(mulheres), " (", tags$b(paste0(perc_mul, "%")), ") são mulheres e ",
             tags$b(homens), " (", tags$b(paste0(perc_hom, "%")), ") homens."
           )
@@ -1205,11 +1199,37 @@ server <- function(input, output, session){
     })
     
     ################################ ACOMPANHAMENTO ################################## 
-    # 🔹 Atualizar COMUNIDADE a partir do DISTRITO
+    
+    
+    # =====================================================
+    # 🎨 FUNÇÃO PONTOS
+    # =====================================================
+    formatar_pontos <- function(x) {
+      sapply(x, function(valor) {
+        
+        if (is.na(valor) || valor == "") {
+          '<span style="color: grey; font-size: 40px;">&#9679;</span>'
+          
+        } else if (valor == "Presente") {
+          '<span style="color: purple; font-size: 40px;">&#9679;</span>'
+          
+        } else if (valor == "Ausente") {
+          '<span style="color: red; font-size: 40px;">&#9679;</span>'
+          
+        } else {
+          '<span style="color: grey; font-size: 40px;">&#9679;</span>'
+        }
+      })
+    }
+    
+    # =====================================================
+    # 🔁 UPDATE COMUNIDADE
+    # =====================================================
     observeEvent(input$distritoInput_, {
+      
       df <- Presencas_Nexus
       
-      comunidades_filtradas <- if (input$distritoInput_ == "TODOS") {
+      comunidades <- if (input$distritoInput_ == "TODOS") {
         sort(unique(df$Comunidade))
       } else {
         sort(unique(df$Comunidade[df$Distrito == input$distritoInput_]))
@@ -1218,101 +1238,192 @@ server <- function(input, output, session){
       updateSelectInput(
         session,
         "comunidadeAcompanhamento",
-        choices = c("TODAS", comunidades_filtradas),
+        choices = c("TODAS", comunidades),
         selected = "TODAS"
       )
     })
     
-    # 🔹 Atualizar FACILITADOR a partir de DISTRITO + COMUNIDADE
+    # =====================================================
+    # 🔁 UPDATE FACILITADOR
+    # =====================================================
     observeEvent(
       list(input$distritoInput_, input$comunidadeAcompanhamento),
       {
+        
         df <- Presencas_Nexus
         
         if (input$distritoInput_ != "TODOS") {
-          df <- df %>% filter(Distrito == input$distritoInput_)
+          df <- df %>% dplyr::filter(Distrito == input$distritoInput_)
         }
         
         if (input$comunidadeAcompanhamento != "TODAS") {
-          df <- df %>% filter(Comunidade == input$comunidadeAcompanhamento)
+          df <- df %>% dplyr::filter(Comunidade == input$comunidadeAcompanhamento)
         }
         
-        facilitadores_filtrados <- sort(unique(df$Facilitadores))
+        facilitadores <- sort(unique(df$Facilitadores))
         
         updateSelectInput(
           session,
           "facilitadorInput",
-          choices = c("TODOS", facilitadores_filtrados),
+          choices = c("TODOS", facilitadores),
           selected = "TODOS"
         )
       },
       ignoreInit = TRUE
     )
     
-    # 🔹 Função para formatar presença
-    formatar_pontos <- function(x) {
-      sapply(x, function(valor) {
-        if (is.na(valor) || valor == "") {
-          '<span style="color: grey; font-size: 40px;">&#9679;</span>'
-        } else if (valor == "Presente") {
-          '<span style="color: purple; font-size: 40px;">&#9679;</span>'
-        } else if (valor == "Ausente") {
-          '<span style="color: red; font-size: 40px;">&#9679;</span>'
-        } else {
-          '<span style="color: grey; font-size: 40px;">&#9679;</span>'
-        }
-      })
-    }
-    
-    # 🔹 Detectar e ordenar colunas de sessões
+    # =====================================================
+    # 📊 COLUNAS DE SESSÕES
+    # =====================================================
     col_sessoes <- names(Presencas_Nexus)[grepl("^Sessão_?\\d+$", names(Presencas_Nexus))]
-    col_sessoes_ordenadas <- col_sessoes[order(as.numeric(gsub("Sessão_?", "", col_sessoes)))]
+    col_sessoes <- col_sessoes[order(as.numeric(gsub("Sessão_?", "", col_sessoes)))]
     
-    # 🔹 Dados filtrados
+    # =====================================================
+    # 📊 DADOS FILTRADOS + QUALIDADE (OPÇÃO 2)
+    # =====================================================
     dados_filtered <- reactive({
+      
       df <- Presencas_Nexus
       
       if (input$distritoInput_ != "TODOS") {
-        df <- df %>% filter(Distrito == input$distritoInput_)
+        df <- df %>% dplyr::filter(Distrito == input$distritoInput_)
       }
       
       if (input$comunidadeAcompanhamento != "TODAS") {
-        df <- df %>% filter(Comunidade == input$comunidadeAcompanhamento)
+        df <- df %>% dplyr::filter(Comunidade == input$comunidadeAcompanhamento)
       }
       
       if (input$facilitadorInput != "TODOS") {
-        df <- df %>% filter(Facilitadores == input$facilitadorInput)
+        df <- df %>% dplyr::filter(Facilitadores == input$facilitadorInput)
       }
       
-      df <- df[, c(setdiff(names(df), col_sessoes_ordenadas), col_sessoes_ordenadas)]
+      total_sessoes <- length(col_sessoes)
       
-      df <- df[rowSums(df[col_sessoes_ordenadas] == "Presente", na.rm = TRUE) > 0, ]
+      df <- df %>%
+        dplyr::mutate(
+          
+          sessoes_preenchidas = rowSums(
+            dplyr::across(all_of(col_sessoes), ~ !is.na(.) & . != ""),
+            na.rm = TRUE
+          ),
+          
+          score = round((sessoes_preenchidas / total_sessoes) * 100, 1),
+          score = ifelse(score > 100, 100, score),
+          
+          # =========================
+          # 🚦 QUALIDADE (OPÇÃO 2)
+          # =========================
+          qualidade = dplyr::case_when(
+            score == 100 ~ "Excelente",
+            score >= 80 ~ "Bom",
+            score >= 60 ~ "Médio",
+            TRUE ~ "Crítico"
+          )
+        )
+      
+      df <- df[rowSums(df[col_sessoes] == "Presente", na.rm = TRUE) > 0, ]
       
       df
     })
     
-    # 🔹 Legenda visual
+    # =====================================================
+    # 🎨 LEGENDA
+    # =====================================================
     output$pontosPresenca <- renderUI({
-      HTML(
-        paste0(
-          '<span style="color: purple; font-size: 25px;">&#9679;</span> Presente &nbsp;&nbsp;',
-          '<span style="color: red; font-size: 25px;">&#9679;</span> Ausente &nbsp;&nbsp;',
-          '<span style="color: grey; font-size: 25px;">&#9679;</span> Não Preenchido'
+      
+      HTML(paste0(
+        '<span style="color: purple; font-size: 25px;">&#9679;</span> Presente &nbsp;&nbsp;',
+        '<span style="color: red; font-size: 25px;">&#9679;</span> Ausente &nbsp;&nbsp;',
+        '<span style="color: grey; font-size: 25px;">&#9679;</span> Não Preenchido'
+      ))
+    })
+    
+    # =====================================================
+    # 🧠 TEXTO EXPLICATIVO
+    # =====================================================
+    output$texto_presencas <- renderUI({
+      
+      df <- dados_filtered()
+      
+      total <- nrow(df)
+      media <- round(mean(df$score, na.rm = TRUE), 1)
+      
+      criticos <- sum(df$qualidade == "Crítico")
+      excelentes <- sum(df$qualidade == "Excelente")
+      
+      facilitadores_criticos <- df %>%
+        dplyr::group_by(Facilitadores) %>%
+        dplyr::summarise(media = mean(score, na.rm = TRUE), .groups = "drop") %>%
+        dplyr::filter(media < 60) %>%
+        dplyr::pull(Facilitadores)
+      
+      txt_fac <- if (length(facilitadores_criticos) == 0) {
+        "Nenhum facilitador crítico identificado."
+      } else {
+        paste(facilitadores_criticos, collapse = ", ")
+      }
+      
+      div(
+        style = "background-color:#f5f3f4; padding:12px; border-radius:6px;",
+        
+        tags$p(
+          style = "margin:0; text-align:justify;",
+          
+          tags$b("📊 Qualidade de Dados — Presenças Individuais: "),
+          
+          "Foram analisados ", tags$b(total), " participantes. ",
+          "A taxa média de qualidade é de ", tags$b(paste0(media, "%")), ". ",
+          
+          tags$br(), tags$br(),
+          
+          "🟢 Excelentes: ", tags$b(excelentes),
+          " | 🟡 Bom/Médio/Crítico distribuídos no sistema. ",
+          
+          tags$br(), tags$br(),
+          
+          "🔴 Críticos: ", tags$b(criticos),
+          
+          tags$br(), tags$br(),
+          
+          tags$b("⚠️ Facilitadores com baixa qualidade de registo: "),
+          txt_fac,
+          
+          tags$br(), tags$br(),
+          
+          "O indicador de qualidade segue uma escala de desempenho: ",
+          "Excelente (100%), Bom (≥80%), Médio (≥60%) e Crítico (<60%). ",
+          "Este painel permite monitoria contínua da qualidade dos dados e identificação de riscos operacionais."
         )
       )
     })
     
-    # 🔹 Tabela
+    # =====================================================
+    # 📋 TABELA (CRÍTICOS PRIMEIRO)
+    # =====================================================
     output$tabelaPresencas <- renderDataTable({
+      
       df <- dados_filtered()
       
-      df[col_sessoes_ordenadas] <- lapply(df[col_sessoes_ordenadas], as.character)
-      df[col_sessoes_ordenadas] <- lapply(df[col_sessoes_ordenadas], formatar_pontos)
+      df[col_sessoes] <- lapply(df[col_sessoes], as.character)
+      df[col_sessoes] <- lapply(df[col_sessoes], formatar_pontos)
+      
+      df$qualidade <- factor(
+        df$qualidade,
+        levels = c("Crítico", "Médio", "Bom", "Excelente")
+      )
       
       datatable(
-        df[, c("Comunidade", "Nome_participante", col_sessoes_ordenadas)],
+        df[order(df$qualidade), c(
+          "Comunidade",
+          "Nome_participante",
+          "score",
+          "qualidade",
+          col_sessoes
+        )],
+        
         escape = FALSE,
         rownames = FALSE,
+        
         options = list(
           pageLength = 10,
           dom = "lfrtip",
