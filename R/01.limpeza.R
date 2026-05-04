@@ -438,3 +438,7 @@ totais <- Qualidade_Sessoes %>%
 
 # Adicionar a linha de totais no final
 Qualidade_Sessoes <- bind_rows(Qualidade_Sessoes, totais)
+
+
+
+##################### DADOS DE MENTORIA

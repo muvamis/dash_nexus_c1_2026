@@ -352,23 +352,80 @@ ui <- navbarPage(
   ## PÁGINA 4 – ADMIN
   ############################################
   
+  # tabPanel(
+  #   title = tagList(icon("hands-helping"), "Mentoria"),
+  #   
+  #   # sidebarLayout(
+  #   #   sidebarPanel(
+  #   #     # actionButton(
+  #   #       # "botao_atualizar",
+  #   #       # "📥 Carregar / Atualizar Dados",
+  #   #       # class = "btn btn-warning"
+  #   #     )
+  #   #   ),
+  #     
+  #     mainPanel(
+  #       verbatimTextOutput("stat"),
+  #       dataTableOutput("tabela_")
+  #     )
+  #   ),
   tabPanel(
-    title = tagList(icon("piggy-bank"), "Poupança"),
+    title = tagList(icon("hands-helping"), "Mentoria"),
     
-    # sidebarLayout(
-    #   sidebarPanel(
-    #     # actionButton(
-    #       # "botao_atualizar",
-    #       # "📥 Carregar / Atualizar Dados",
-    #       # class = "btn btn-warning"
-    #     )
-    #   ),
+    tabsetPanel(
       
-      mainPanel(
-        verbatimTextOutput("stat"),
-        dataTableOutput("tabela_")
+      # ==========================
+      # 🟢 TAB 1: SESSÕES
+      # ==========================
+      tabPanel(
+        title = tagList(icon("chalkboard-teacher"), "Sessões de Mentoria"),
+        
+        fluidRow(
+          column(12,
+                 h4("📊 Indicadores de Mentoria"),
+                 verbatimTextOutput("stat_sessoes")
+          )
+        ),
+        
+        fluidRow(
+          column(12,
+                 dataTableOutput("tabela_sessoes")
+          )
+        )
+      ),
+      
+      # ==========================
+      # 🔵 TAB 2: VISITAS
+      # ==========================
+      tabPanel(
+        title = tagList(icon("route"), "Gestão de Visitas"),
+        
+        fluidRow(
+          column(4,
+                 actionButton("gerar_visitas",
+                              "🔄 Gerar Lista de Visitas",
+                              class = "btn-primary")
+          )
+        ),
+        
+        br(),
+        
+        fluidRow(
+          column(12,
+                 h4("🚨 Casos Prioritários"),
+                 verbatimTextOutput("stat_visitas")
+          )
+        ),
+        
+        fluidRow(
+          column(12,
+                 dataTableOutput("tabela_visitas")
+          )
+        )
       )
-    ),
+      
+    )
+  ),
   
   tabPanel(
     title = tagList(icon("user-shield"), "Admin"),
@@ -2039,7 +2096,9 @@ server <- function(input, output, session){
       
       datatable(df, options = list(pageLength = 10))
     })
+    ########################### PAGINA DE MENTORIA ##################
     
+
 
 #   
   # ADMIN
@@ -2124,6 +2183,8 @@ server <- function(input, output, session){
       "⏳ Aguardando actualização..."
     }
   })
+  
+  
 }
 
 ############################################
