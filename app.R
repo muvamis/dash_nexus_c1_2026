@@ -329,7 +329,7 @@ ui <- navbarPage(
           style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
           tags$p(
             style = "margin: 0; text-align: justify;",
-            "A elegibilidade para atribuição do grants foi definida com base na assiduidade, sendo considerados elegíveis apenas os participantes com pelo menos 66.7% de participação nas sessões (equivalente a um mínimo de 8 presenças em 12 sessões). Participantes com 4 ou mais faltas não são elegíveis."
+            "A elegibilidade para atribuição do grants foi definida com base na assiduidade, sendo considerados elegíveis apenas os participantes com pelo menos 66.7% de participação nas sessões (equivalente a um mínimo de 8 presenças em 12 sessões)."
           )
         ),
       
@@ -339,7 +339,7 @@ ui <- navbarPage(
           style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
           tags$p(
             style = "margin: 0; text-align: justify;",
-            "A tabela apresenta os participantes e respetivo estado de elegibilidade para atribuição do grants, com base na assiduidade registada. São considerados elegíveis os participantes com menor nível de faltas (menos de 4 ausencias), sendo esta informação refletida na coluna 'Elegivel_Grant'. Os participantes elegíveis são identificados a roxo, enquanto os não elegíveis são apresentados a laranja."
+            "A tabela apresenta os participantes e respetivo estado de elegibilidade para atribuição do grants, com base na assiduidade registada. Não são considerados elegíveis os participantes com mais de 4 ausencias, sendo esta informação refletida na coluna 'Elegivel_Grant'. Os participantes elegíveis são identificados a roxo, enquanto os não elegíveis são apresentados a laranja."
           )
         ),
         downloadButton("baixar_grants", "Baixar Lista (Excel)"),
@@ -700,7 +700,7 @@ server <- function(input, output, session){
       count(Tem_Negocio, Sexo) %>%
       ungroup() %>%
       mutate(
-        total_geral = sum(n),  # soma geral de todos os participantes
+        total_geral = sum(n),  
         perc = round(n / total_geral * 100, 1),
         label = paste0(n, " (", perc, "%)"),
         Sexo = factor(Sexo, levels = c("Feminino","Masculino"))
@@ -1827,7 +1827,7 @@ server <- function(input, output, session){
         Percentual_Presenca = (Total_Presencas / Total_Sessoes) * 100,
         
         # REGRA FINAL (baseada em problemáticos)
-        Elegivel_Grant = ifelse(Total_Problematico < 4, "Elegível", "Não Elegível")
+        Elegivel_Grant = ifelse(Total_Problematico <= 4, "Elegível", "Não Elegível")
       )
     
     ### 🔹 2. Reactive para filtros
@@ -2114,14 +2114,14 @@ server <- function(input, output, session){
         client_id, client_secret, refresh_token
       )$access_token
       
-      ## 1. Presenças Coletivas
-      dados <- RZohoCreator::get_records(
-        "associacaomuva", "monitoria", "PRESENCAS_NEXUS_Report", access_token
-      ) %>%
-        data.frame()
-      
-      # Baixar
-      writexl::write_xlsx(dados, path = "Presencas_Nexus.xlsx")
+      # ## 1. Presenças Coletivas
+      # dados <- RZohoCreator::get_records(
+      #   "associacaomuva", "monitoria", "PRESENCAS_NEXUS_Report", access_token
+      # ) %>%
+      #   data.frame()
+      # 
+      # # Baixar
+      # writexl::write_xlsx(dados, path = "Presencas_Nexus.xlsx")
       
       ## 1. Presenças Coletivas
       Qualidade_Sessoes <- RZohoCreator::get_records(
@@ -2133,7 +2133,7 @@ server <- function(input, output, session){
       writexl::write_xlsx(Qualidade_Sessoes, path = "Qualidade_Sessoes.xlsx")
       
       return(list(
-        dados = dados,
+        # dados = dados,
         Qualidade_Sessoes = Qualidade_Sessoes
       ))
     }, error = function(e) {
