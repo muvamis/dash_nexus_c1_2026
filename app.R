@@ -325,15 +325,35 @@ ui <- navbarPage(
       
       mainPanel(
         
-        div(
-          style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
-          tags$p(
-            style = "margin: 0; text-align: justify;",
-            "A elegibilidade para atribuição do grants foi definida com base na assiduidade, sendo considerados elegíveis apenas os participantes com pelo menos 66.7% de participação nas sessões (equivalente a um mínimo de 8 presenças em 12 sessões)."
+        fluidRow(
+          column(
+            6,
+            div(
+              style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+              tags$p(
+                style = "margin: 0; text-align: justify;",
+                "A elegibilidade para atribuição do grants foi definida com base na assiduidade, sendo considerados elegíveis apenas os participantes com pelo menos 66.7% de participação nas sessões (equivalente a um mínimo de 8 presenças em 12 sessões)."
+              )
+            ),
+            
+            plotlyOutput("grafico_percentagem_grants", height = "400px"),
+          ),
+          column(
+            6,
+            uiOutput("texto_Receberam_grant"),
+            
+            br(),
+            plotlyOutput("grafico_Receberam_grants")
           )
         ),
-      
-        plotlyOutput("grafico_percentagem_grants", height = "400px"),
+        br(),
+        fluidRow(
+          column(
+            12,
+            uiOutput("texto_Receberam_grants"),
+          plotlyOutput("grafico_Receberam_Estado")
+        )
+      ),
         br(),
         div(
           style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
@@ -2005,7 +2025,7 @@ server <- function(input, output, session){
           
           annotations = list(
             list(
-              text = "O gráfico apresenta a taxa de elegibilidade por distrito e sexo, incluindo percentagem e valores (Elegíveis/Total).",
+              text = "",
               x = 0,
               y = 1.08,
               xref = "paper",
@@ -2018,6 +2038,417 @@ server <- function(input, output, session){
         )
     })
     
+    output$grafico_Receberam_grants <- renderPlotly({
+      
+      df <- Perfil_Mentoria
+      
+      # ================================
+      # 🔹 Filtros (se quiseres manter consistência)
+      # ================================
+      if (input$filtro_grants_distrito != "Todos") {
+        df <- df %>% filter(Distrito == input$filtro_grants_distrito)
+      }
+      
+      if (input$filtro_grants_facilitador != "Todos") {
+        df <- df %>% filter(Facilitadores == input$filtro_grants_facilitador)
+      }
+      
+      # ================================
+      # 🔹 Filtrar apenas quem recebeu grants
+      # ================================
+      df <- df %>%
+        filter(Recebeu_Grants == "Sim")
+      
+      # ================================
+      # 🔹 Agregação
+      # ================================
+      df <- df %>%
+        group_by(Distrito, Sexo) %>%
+        summarise(
+          Total = n(),
+          .groups = "drop"
+        ) %>%
+        arrange(desc(Total))
+      
+      df$Sexo <- factor(df$Sexo, levels = c("Feminino", "Masculino"))
+      
+      # 🔹 Limite dinâmico
+      limite_y <- max(df$Total, na.rm = TRUE) + 15
+      
+      # ================================
+      # 🔹 Gráfico
+      # ================================
+      plot_ly(
+        df,
+        x = ~Distrito,
+        y = ~Total,
+        color = ~Sexo,
+        colors = c("#9942D4", "#F77333"),
+        type = "bar",
+        
+        text = ~Total,
+        textposition = "outside",
+        
+        hoverinfo = "text",
+        hovertext = ~paste0(
+          "Distrito: ", Distrito,
+          "<br>Sexo: ", Sexo,
+          "<br>Total que receberam Grants: ", Total
+        )
+        
+      ) %>%
+        layout(
+          
+          barmode = "group",
+          
+          title = list(
+            text = "",
+            font = list(size = 16)
+          ),
+          
+          paper_bgcolor = "#f5f3f4",
+          plot_bgcolor  = "#f5f3f4",
+          
+          xaxis = list(
+            title = "Distrito",
+            tickfont = list(size = 12)
+          ),
+          
+          yaxis = list(
+            title = "Número de Participantes",
+            range = c(0, limite_y),
+            tickfont = list(size = 12)
+          ),
+          
+          legend = list(
+            title = list(text = "<b>Sexo</b>")
+          )
+        )
+    })
+    
+    output$texto_Receberam_grant <- renderUI({
+      
+      df <- Perfil_Mentoria
+      
+      # =================================
+      # FILTROS
+      # =================================
+      if (input$filtro_grants_distrito != "Todos") {
+        
+        df <- df %>%
+          filter(Distrito == input$filtro_grants_distrito)
+      }
+      
+      if (input$filtro_grants_facilitador != "Todos") {
+        
+        df <- df %>%
+          filter(Facilitadores == input$filtro_grants_facilitador)
+      }
+      
+      # =================================
+      # ELEGÍVEIS
+      # =================================
+      elegiveis <- df %>%
+        filter(Elegivel_Grant == "Elegível")
+      
+      # =================================
+      # RECEBERAM
+      # =================================
+      receberam <- elegiveis %>%
+        filter(Recebeu_Grants == "Sim")
+      
+      # =================================
+      # RESUMO POR DISTRITO
+      # =================================
+      resumo <- elegiveis %>%
+        
+        group_by(Distrito, Sexo) %>%
+        
+        summarise(
+          Elegiveis = n(),
+          Receberam = sum(Recebeu_Grants == "Sim"),
+          Percentagem = round((Receberam / Elegiveis) * 100, 1),
+          .groups = "drop"
+        )
+      
+      # =================================
+      # TEXTO AUTOMÁTICO
+      # =================================
+      texto_final <- resumo %>%
+        
+        group_by(Distrito) %>%
+        
+        summarise(
+          
+          texto = paste0(
+            
+            "Em ", first(Distrito),
+            
+            ", dos ",
+            
+            sum(Elegiveis),
+            
+            " elegíveis (",
+            
+            Elegiveis[Sexo == "Feminino"],
+            " feminino e ",
+            
+            Elegiveis[Sexo == "Masculino"],
+            " masculino), receberam o grants ",
+            
+            sum(Receberam),
+            
+            " participantes (",
+            
+            Receberam[Sexo == "Feminino"],
+            " feminino e ",
+            
+            Receberam[Sexo == "Masculino"],
+            " masculino), correspondendo a ",
+            
+            round((sum(Receberam) / sum(Elegiveis)) * 100, 1),
+            
+            "% no total (",
+            
+            Percentagem[Sexo == "Feminino"],
+            "% feminino e ",
+            
+            Percentagem[Sexo == "Masculino"],
+            "% masculino)."
+            
+          ),
+          
+          .groups = "drop"
+        )
+      
+      HTML(
+        
+        paste0(
+          
+          "<div style='background-color:#f5f3f4;
+      padding:12px;
+      border-radius:6px;
+      margin-bottom:20px;
+      text-align:justify;'>",
+          
+          paste(texto_final$texto, collapse = " "),
+          
+          "</div>"
+        )
+      )
+      
+    })
+    
+    # ==========================================
+    # DADOS - SITUAÇÃO DOS QUE RECEBERAM GRANTS
+    # ==========================================
+    dados_situacao_grants <- reactive({
+      
+      df <- Perfil_Mentoria %>%
+        
+        dplyr::filter(
+          Recebeu_Grants == "Sim"
+        )
+      
+      # ----------------------------
+      # FILTRO DISTRITO
+      # ----------------------------
+      if (input$filtro_grants_distrito != "Todos") {
+        
+        df <- df %>%
+          dplyr::filter(
+            Distrito == input$filtro_grants_distrito
+          )
+      }
+      
+      total_geral <- nrow(df)
+      
+      df %>%
+        
+        dplyr::count(Situacao_Participante, Sexo) %>%
+        
+        dplyr::mutate(
+          
+          percent_global = (n / total_geral) * 100,
+          
+          label = paste0(
+            n,
+            " (",
+            round(percent_global, 1),
+            "%)"
+          )
+        )
+      
+    })
+    
+    
+    # ==========================================
+    # GRÁFICO
+    # ==========================================
+    output$grafico_Receberam_Estado <- renderPlotly({
+      
+      plot_ly(
+        
+        data = dados_situacao_grants(),
+        
+        x = ~Situacao_Participante,
+        y = ~n,
+        
+        color = ~Sexo,
+        
+        colors = c(
+          "Feminino" = "#9942D4",
+          "Masculino" = "#F77333"
+        ),
+        
+        type = "bar",
+        
+        text = ~label,
+        
+        textposition = "inside",
+        
+        insidetextanchor = "middle",
+        
+        textfont = list(
+          size = 12,
+          color = "white"
+        ),
+        
+        hovertemplate = paste(
+          "<b>Situação:</b> %{x}<br>",
+          "<b>Sexo:</b> %{color}<br>",
+          "<b>Participantes:</b> %{y}<br>",
+          "<b>% do total:</b> %{customdata:.1f}%<extra></extra>"
+        ),
+        
+        customdata = ~percent_global
+        
+      ) %>%
+        
+        layout(
+          
+          title = list(
+            text = ""
+          ),
+          
+          paper_bgcolor = "#f5f3f4",
+          plot_bgcolor  = "#f5f3f4",
+          
+          xaxis = list(
+            title = "Situação do Participante",
+            tickangle = -20
+          ),
+          
+          yaxis = list(
+            title = "Número de Participantes"
+          ),
+          
+          legend = list(
+            title = list(
+              text = "<b>Sexo</b>"
+            )
+          ),
+          
+          barmode = "stack"
+          
+        )
+      
+    })
+    
+    
+    # ==========================================
+    # TEXTO INTERPRETATIVO
+    # ==========================================
+    output$texto_Receberam_grants <- renderUI({
+      
+      df <- Perfil_Mentoria %>%
+        
+        dplyr::filter(
+          Recebeu_Grants == "Sim"
+        )
+      
+      # ----------------------------
+      # FILTRO DISTRITO
+      # ----------------------------
+      distrito_sel <- input$filtro_grants_distrito
+      
+      if (distrito_sel != "Todos") {
+        
+        df <- df %>%
+          dplyr::filter(
+            Distrito == distrito_sel
+          )
+      }
+      
+      # ----------------------------
+      # TOTAIS
+      # ----------------------------
+      total_geral <- nrow(df)
+      
+      sexo_geral <- df %>%
+        dplyr::count(Sexo)
+      
+      situacao_geral <- df %>%
+        dplyr::count(Situacao_Participante) %>%
+        dplyr::mutate(
+          percent = (n / sum(n)) * 100
+        )
+      
+      feminino <- ifelse(
+        "Feminino" %in% sexo_geral$Sexo,
+        sexo_geral$n[sexo_geral$Sexo == "Feminino"],
+        0
+      )
+      
+      masculino <- ifelse(
+        "Masculino" %in% sexo_geral$Sexo,
+        sexo_geral$n[sexo_geral$Sexo == "Masculino"],
+        0
+      )
+      
+      # ----------------------------
+      # TEXTO
+      # ----------------------------
+      texto <- paste0(
+        
+        "Dos participantes que receberam grants, registam-se <b>",
+        total_geral,
+        "</b> beneficiários (<b>",
+        feminino,
+        "</b> mulheres e <b>",
+        masculino,
+        "</b> homens). ",
+        
+        "Em termos de situação dos participantes, observa-se a seguinte distribuição: ",
+        
+        paste0(
+          situacao_geral$Situacao_Participante,
+          " (",
+          round(situacao_geral$percent, 1),
+          "%)",
+          collapse = ", "
+        ),
+        
+        "."
+      )
+      
+      HTML(
+        
+        paste0(
+          
+          "<div style='background:#f5f3f4;
+      padding:12px;
+      border-radius:6px;
+      margin-bottom:20px;
+      text-align:justify;'>",
+          
+          texto,
+          
+          "</div>"
+        )
+      )
+      
+    })
 ################# PAGINA QUALIDADE DAS SESSOES
     
     # =========================

@@ -442,3 +442,27 @@ Qualidade_Sessoes <- bind_rows(Qualidade_Sessoes, totais)
 
 
 ##################### DADOS DE MENTORIA
+
+Lista_Grants_Mentoria <- read_excel("Lista_Grants_Mentoria.xlsx")
+
+Perfil_NEXUS_GERAL <- read_excel("Perfil_NEXUS_GERAL.xlsx")
+
+Lista_Grants_Mentoria <- Lista_Grants_Mentoria %>%
+     select(-c(2, 4, 5, 6, 7))
+
+
+Lista_Grants_Mentoria <- Lista_Grants_Mentoria %>%
+     filter(Elegivel_Grant == "Elegível")
+
+Perfil_Mentoria <- Lista_Grants_Mentoria %>%
+  inner_join(
+    Perfil_NEXUS_GERAL,
+    by = c("Nome_Participante", "Distrito")
+  )
+
+table(Lista_Grants_Mentoria$Distrito, Lista_Grants_Mentoria$Recebeu_Grants)
+
+nao_encontrados <- Lista_Grants_Mentoria %>%
+     anti_join(Perfil_NEXUS_GERAL, by = c("Nome_Participante", "Distrito"))
+
+# writexl::write_xlsx(Perfil_Mentoria, path = "Perfil_Mentoria.xlsx")
