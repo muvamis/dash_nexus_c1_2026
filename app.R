@@ -395,76 +395,137 @@ ui <- navbarPage(
     tabsetPanel(
       
       # ==========================
-      # 🟢 TAB 1: SESSÕES
+      # 🟢 SESSÕES
       # ==========================
       tabPanel(
         title = tagList(icon("chalkboard-teacher"), "Sessões de Mentoria"),
         
-        fluidRow(
-          column(12,
-                 h4("📊 Indicadores de Mentoria"),
-                 verbatimTextOutput("stat_sessoes")
-          )
-        ),
-        
-        fluidRow(
-          column(12,
-                 dataTableOutput("tabela_sessoes")
+        sidebarLayout(
+          sidebarPanel(
+            selectInput(
+              "distritoInput_mentoria",
+              "Distrito:",
+              choices = c("TODOS", unique(Presencas_Nexus_Mentoria$Distrito))
+            ),
+            selectInput(
+              "comunidade_mentoria",
+              "Comunidade:",
+              choices = c("TODAS", unique(Presencas_Nexus_Mentoria$Comunidade))
+            ),
+            selectInput(
+              "facilitador_mentoria",
+              "Facilitadores:",
+              choices = c("TODOS", unique(Presencas_Nexus_Mentoria$Facilitadores))
+            )
+          ),
+          
+          mainPanel(
+            uiOutput("texto_participacao_Mentoria"),
+            br(),
+            withSpinner(plotlyOutput("grafico_Participacao_Mentoria", height = "500px")),
+            br(), br(),
+            
+            uiOutput("texto_participa_sexo"),
+            br(),
+            withSpinner(plotlyOutput("grafico_Participacao_Sexo", height = "400px")),
+            br(),
+            
+            uiOutput("pontosPresenca_mentoria"),
+            br(),
+            uiOutput("texto_presencas_mentoria"),
+            br(),
+            
+            dataTableOutput("tabelaPresencas_mentoria")
           )
         )
       ),
       
       # ==========================
-      # 🔵 TAB 2: VISITAS
+      # 🔵 ACOMPANHAMENTO
       # ==========================
       tabPanel(
-        title = tagList(icon("route"), "Gestão de Visitas"),
+        title = tagList(icon("route"), "Acompanhamento"),
         
-        fluidRow(
-          column(4,
-                 actionButton("gerar_visitas",
-                              "🔄 Gerar Lista de Visitas",
-                              class = "btn-primary")
+        sidebarLayout(
+          sidebarPanel(
+            selectInput(
+              "distritoInput_mentoria_Acomp",
+              "Distrito:",
+              choices = c("TODOS", unique(Acompanhamento_Individuais_Nexus$Distrito))
+            ),
+            selectInput(
+              "comunidade_mentoria_Acomp",
+              "Comunidade:",
+              choices = c("TODAS", unique(Acompanhamento_Individuais_Nexus$Comunidade))
+            ),
+            selectInput(
+              "facilitador_mentoria_Acomp",
+              "Facilitadores:",
+              choices = c("TODOS", unique(Acompanhamento_Individuais_Nexus$Facilitador))
+            )
+          ),
+          
+          mainPanel(
+            
+            fluidRow(
+              column(
+                12,
+                withSpinner(
+                  plotlyOutput("grafico_acompanhamento_geral", height = "420px")
+                )
+              )
+            ),
+            
+            br(),
+            
+            fluidRow(
+              column(
+                12,
+                withSpinner(
+                  dataTableOutput("tabelaAcompanhamento_Ind")
+                )
+              )
+            ),
+            
+            br(),
+            
+            fluidRow(
+              column(12, uiOutput("stat_visitas"))
+            ),
+            
+            br(),
+            
+            fluidRow(
+              column(12, dataTableOutput("tabela_visitas"))
+            )
+            
           )
-        ),
-        
-        br(),
-        
-        fluidRow(
-          column(12,
-                 h4("🚨 Casos Prioritários"),
-                 verbatimTextOutput("stat_visitas")
-          )
-        ),
-        
-        fluidRow(
-          column(12,
-                 dataTableOutput("tabela_visitas")
-          )
-        )
-      )
-      
-    )
-  ),
-  
-  tabPanel(
-    title = tagList(icon("user-shield"), "Admin"),
-    
-    sidebarLayout(
-      sidebarPanel(
-        actionButton(
-          "botao_atualizar",
-          "📥 Carregar / Atualizar Dados",
-          class = "btn btn-warning"
         )
       ),
       
-      mainPanel(
-        verbatimTextOutput("status_atualizacao"),
-        dataTableOutput("tabela_admin_usuarios")
+      # ==========================
+      # 👤 ADMIN
+      # ==========================
+      tabPanel(
+        title = tagList(icon("user-shield"), "Admin"),
+        
+        sidebarLayout(
+          sidebarPanel(
+            actionButton(
+              "botao_atualizar",
+              "📥 Carregar / Atualizar Dados",
+              class = "btn btn-warning"
+            )
+          ),
+          
+          mainPanel(
+            verbatimTextOutput("status_atualizacao"),
+            dataTableOutput("tabela_admin_usuarios")
+          )
+        )
       )
     )
-  )
+    )
 )
 
 ############################################
@@ -2529,8 +2590,929 @@ server <- function(input, output, session){
     })
     ########################### PAGINA DE MENTORIA ##################
     
-
-
+    observe({
+      
+      req(input$distritoInput_mentoria)
+      
+      df <- Presencas_Nexus_Mentoria
+      
+      if (input$distritoInput_mentoria != "TODOS") {
+        df <- df %>%
+          filter(Distrito == input$distritoInput_mentoria)
+      }
+      
+      comunidades <- c("TODAS", sort(unique(df$Comunidade)))
+      
+      updateSelectInput(
+        session,
+        "comunidade_mentoria",
+        choices = comunidades,
+        selected = "TODAS"
+      )
+      
+    })
+    
+    dados_filtrados_mentoria <- reactive({
+      
+      df <- Presencas_Nexus_Mentoria
+      
+      if (input$distritoInput_mentoria != "TODOS") {
+        df <- df %>%
+          filter(Distrito == input$distritoInput_mentoria)
+      }
+      
+      if (input$comunidade_mentoria != "TODAS") {
+        df <- df %>%
+          filter(Comunidade == input$comunidade_mentoria)
+      }
+      
+      if (input$facilitador_mentoria != "TODOS") {
+        df <- df %>%
+          filter(Facilitadores == input$facilitador_mentoria)
+      }
+      
+      df
+      
+    })
+    
+    output$grafico_Participacao_Mentoria <- renderPlotly({
+      
+      df <- dados_filtrados_mentoria()
+      
+      validate(
+        need(nrow(df) > 0, "Nenhum dado disponível.")
+      )
+      
+      sessao_cols <- names(df)[grepl("^Sessão_?\\d+$", names(df))]
+      
+      sessao_cols_ordenadas <- sessao_cols[
+        order(as.numeric(gsub("Sessão_?", "", sessao_cols)))
+      ]
+      
+      df_long <- df %>%
+        pivot_longer(
+          cols = all_of(sessao_cols_ordenadas),
+          names_to = "Sessao",
+          values_to = "Presenca"
+        ) %>%
+        filter(Presenca == "Presente") %>%
+        group_by(Sessao, Sexo) %>%
+        summarise(Count = n(), .groups = "drop") %>%
+        mutate(
+          Sessao_Num = as.numeric(gsub("Sessão_?", "", Sessao))
+        ) %>%
+        arrange(Sessao_Num)
+      
+      totais_sessao <- df_long %>%
+        group_by(Sessao) %>%
+        summarise(total = sum(Count), .groups = "drop")
+      
+      df_long <- df_long %>%
+        group_by(Sessao) %>%
+        arrange(Sexo) %>%
+        mutate(
+          y0 = cumsum(lag(Count, default = 0)),
+          y_center = y0 + Count / 2
+        )
+      
+      annotations_segmentos <- lapply(seq_len(nrow(df_long)), function(i) {
+        list(
+          x = df_long$Sessao[i],
+          y = df_long$y_center[i],
+          text = df_long$Count[i],
+          showarrow = FALSE,
+          font = list(color = "white")
+        )
+      })
+      
+      annotations_totais <- lapply(seq_len(nrow(totais_sessao)), function(i) {
+        list(
+          x = totais_sessao$Sessao[i],
+          y = totais_sessao$total[i] + 5,
+          text = totais_sessao$total[i],
+          showarrow = FALSE
+        )
+      })
+      
+      plot_ly(
+        data = df_long,
+        x = ~Sessao,
+        y = ~Count,
+        color = ~Sexo,
+        colors = c(
+          "Feminino" = "#9942D4",
+          "Masculino" = "#F77333"
+        ),
+        type = "bar"
+      ) %>%
+        layout(
+          barmode = "stack",
+          paper_bgcolor = "#f5f3f4",
+          plot_bgcolor = "#f5f3f4",
+          xaxis = list(title = ""),
+          yaxis = list(title = "Número de Presenças"),
+          annotations = c(
+            annotations_segmentos,
+            annotations_totais
+          )
+        )
+      
+    })
+    
+    output$texto_participacao_Mentoria <- renderUI({
+      
+      df <- dados_filtrados_mentoria()
+      
+      sessoes_cols <- names(df)[grepl("^Sessão_?\\d+$", names(df))]
+      
+      presencas_por_sessao <- colSums(
+        df[, sessoes_cols] == "Presente",
+        na.rm = TRUE
+      )
+      
+      sessao_max <- names(which.max(presencas_por_sessao))
+      valor_max <- max(presencas_por_sessao)
+      
+      sessao_min <- names(which.min(presencas_por_sessao))
+      valor_min <- min(presencas_por_sessao)
+      
+      media_sessoes <- mean(presencas_por_sessao)
+      
+      texto <- paste0(
+        "A sessão com maior participação foi <b>",
+        sessao_max,
+        "</b> com <b>",
+        valor_max,
+        "</b> presenças. A menor participação ocorreu na <b>",
+        sessao_min,
+        "</b> com <b>",
+        valor_min,
+        "</b> presenças. Em média as sessões registaram <b>",
+        round(media_sessoes,1),
+        "</b> participantes."
+      )
+      
+      HTML(
+        paste0(
+          "<div style='background:#f5f3f4;padding:12px;border-radius:6px;'>",
+          texto,
+          "</div>"
+        )
+      )
+      
+    })
+    
+    output$grafico_Participacao_Sexo <- renderPlotly({
+      
+      df <- dados_filtrados_mentoria()
+      
+      sessao_cols <- names(df)[grepl("^Sessão_?\\d+$", names(df))]
+      
+      previstos <- df %>%
+        count(Sexo) %>%
+        rename(Previsto = n)
+      
+      df_long <- df %>%
+        pivot_longer(
+          cols = all_of(sessao_cols),
+          names_to = "Sessao",
+          values_to = "Presenca"
+        ) %>%
+        filter(Presenca == "Presente") %>%
+        group_by(Sessao, Sexo) %>%
+        summarise(Count = n(), .groups = "drop") %>%
+        left_join(previstos, by = "Sexo") %>%
+        mutate(
+          Porcentagem = Count / Previsto * 100
+        )
+      
+      plot_ly(
+        data = df_long,
+        x = ~Sessao,
+        y = ~Porcentagem,
+        type = "scatter",
+        mode = "lines+markers+text",
+        color = ~Sexo,
+        colors = c(
+          "Feminino" = "#9942D4",
+          "Masculino" = "#F77333"
+        ),
+        text = ~paste0(round(Porcentagem,1), "%"),
+        textposition = "top center"
+      ) %>%
+        layout(
+          paper_bgcolor = "#f5f3f4",
+          plot_bgcolor = "#f5f3f4",
+          xaxis = list(title = "Sessão"),
+          yaxis = list(
+            title = "Percentual (%)",
+            range = c(0,110)
+          )
+        )
+      
+    })
+    
+    output$texto_participa_sexo <- renderUI({
+      
+      df <- dados_filtrados_mentoria()
+      
+      sessoes_cols <- names(df)[grepl("^Sessão_?\\d+$", names(df))]
+      
+      previstos <- df %>%
+        count(Sexo) %>%
+        rename(Previsto = n)
+      
+      df_long <- df %>%
+        pivot_longer(
+          cols = all_of(sessoes_cols),
+          names_to = "Sessao",
+          values_to = "Presenca"
+        ) %>%
+        filter(Presenca == "Presente") %>%
+        group_by(Sessao, Sexo) %>%
+        summarise(Count = n(), .groups = "drop") %>%
+        left_join(previstos, by = "Sexo") %>%
+        mutate(
+          Porcentagem = Count / Previsto * 100
+        )
+      
+      medias <- df_long %>%
+        group_by(Sexo) %>%
+        summarise(
+          media = mean(Porcentagem),
+          .groups = "drop"
+        )
+      
+      texto <- paste0(
+        "As mulheres apresentam uma participação média de <b>",
+        round(medias$media[medias$Sexo == "Feminino"],1),
+        "%</b> e os homens <b>",
+        round(medias$media[medias$Sexo == "Masculino"],1),
+        "%</b> ao longo das sessões de mentoria."
+      )
+      
+      HTML(
+        paste0(
+          "<div style='background:#f5f3f4;padding:12px;border-radius:6px;'>",
+          texto,
+          "</div>"
+        )
+      )
+      
+    })
+    
+    # =====================================================
+    # 🎨 FUNÇÃO PONTOS
+    # =====================================================
+    
+    formatar_pontos <- function(x) {
+      
+      sapply(x, function(valor) {
+        
+        if (is.na(valor) || valor == "") {
+          
+          '<span style="color: grey; font-size: 40px;">&#9679;</span>'
+          
+        } else if (valor == "Presente") {
+          
+          '<span style="color: purple; font-size: 40px;">&#9679;</span>'
+          
+        } else if (valor == "Ausente") {
+          
+          '<span style="color: red; font-size: 40px;">&#9679;</span>'
+          
+        } else {
+          
+          '<span style="color: grey; font-size: 40px;">&#9679;</span>'
+          
+        }
+        
+      })
+      
+    }
+    
+    # =====================================================
+    # 🔁 UPDATE COMUNIDADE
+    # =====================================================
+    
+    observeEvent(input$distritoInput_mentoria, {
+      
+      df <- Presencas_Nexus_Mentoria
+      
+      comunidades <- if (input$distritoInput_mentoria == "TODOS") {
+        
+        sort(unique(df$Comunidade))
+        
+      } else {
+        
+        sort(unique(
+          df$Comunidade[
+            df$Distrito == input$distritoInput_mentoria
+          ]
+        ))
+        
+      }
+      
+      updateSelectInput(
+        session,
+        "comunidade_mentoria",
+        choices = c("TODAS", comunidades),
+        selected = "TODAS"
+      )
+      
+    })
+    
+    # =====================================================
+    # 🔁 UPDATE FACILITADOR
+    # =====================================================
+    
+    observeEvent(
+      
+      list(
+        input$distritoInput_mentoria,
+        input$comunidade_mentoria
+      ),
+      
+      {
+        
+        df <- Presencas_Nexus_Mentoria
+        
+        if (input$distritoInput_mentoria != "TODOS") {
+          
+          df <- df %>%
+            filter(Distrito == input$distritoInput_mentoria)
+          
+        }
+        
+        if (input$comunidade_mentoria != "TODAS") {
+          
+          df <- df %>%
+            filter(Comunidade == input$comunidade_mentoria)
+          
+        }
+        
+        facilitadores <- sort(unique(df$Facilitadores))
+        
+        updateSelectInput(
+          session,
+          "facilitador_mentoria",
+          choices = c("TODOS", facilitadores),
+          selected = "TODOS"
+        )
+        
+      },
+      
+      ignoreInit = TRUE
+      
+    )
+    
+    # =====================================================
+    # 📊 COLUNAS DE SESSÕES
+    # =====================================================
+    
+    col_sessoes_mentoria <- names(Presencas_Nexus_Mentoria)[
+      grepl("^Sessão_?\\d+$", names(Presencas_Nexus_Mentoria))
+    ]
+    
+    col_sessoes_mentoria <- col_sessoes_mentoria[
+      order(
+        as.numeric(
+          gsub("Sessão_?", "", col_sessoes_mentoria)
+        )
+      )
+    ]
+    
+    # =====================================================
+    # 📊 DADOS FILTRADOS
+    # =====================================================
+    
+    dados_filtered_mentoria <- reactive({
+      
+      df <- Presencas_Nexus_Mentoria
+      
+      if (input$distritoInput_mentoria != "TODOS") {
+        
+        df <- df %>%
+          filter(Distrito == input$distritoInput_mentoria)
+        
+      }
+      
+      if (input$comunidade_mentoria != "TODAS") {
+        
+        df <- df %>%
+          filter(Comunidade == input$comunidade_mentoria)
+        
+      }
+      
+      if (input$facilitador_mentoria != "TODOS") {
+        
+        df <- df %>%
+          filter(Facilitadores == input$facilitador_mentoria)
+        
+      }
+      
+      total_sessoes <- length(col_sessoes_mentoria)
+      
+      df <- df %>%
+        
+        mutate(
+          
+          sessoes_preenchidas = rowSums(
+            
+            across(
+              all_of(col_sessoes_mentoria),
+              ~ !is.na(.) & . != ""
+            ),
+            
+            na.rm = TRUE
+            
+          ),
+          
+          score = round(
+            (sessoes_preenchidas / total_sessoes) * 100,
+            1
+          ),
+          
+          score = ifelse(score > 100, 100, score),
+          
+          qualidade = case_when(
+            
+            score == 100 ~ "Excelente",
+            
+            score >= 80 ~ "Bom",
+            
+            score >= 60 ~ "Médio",
+            
+            TRUE ~ "Crítico"
+            
+          )
+          
+        )
+      
+      df <- df[
+        rowSums(
+          df[col_sessoes_mentoria] == "Presente",
+          na.rm = TRUE
+        ) > 0,
+      ]
+      
+      df
+      
+    })
+    
+    # =====================================================
+    # 🎨 LEGENDA
+    # =====================================================
+    
+    output$pontosPresenca_mentoria <- renderUI({
+      
+      HTML(
+        
+        paste0(
+          
+          '<span style="color: purple; font-size: 25px;">&#9679;</span> Presente &nbsp;&nbsp;',
+          
+          '<span style="color: red; font-size: 25px;">&#9679;</span> Ausente &nbsp;&nbsp;',
+          
+          '<span style="color: grey; font-size: 25px;">&#9679;</span> Não Preenchido'
+          
+        )
+        
+      )
+      
+    })
+    
+    # =====================================================
+    # 🧠 TEXTO EXPLICATIVO
+    # =====================================================
+    
+    output$texto_presencas_mentoria <- renderUI({
+      
+      df <- dados_filtered_mentoria()
+      
+      total <- nrow(df)
+      
+      media <- round(
+        mean(df$score, na.rm = TRUE),
+        1
+      )
+      
+      criticos <- sum(df$qualidade == "Crítico")
+      
+      excelentes <- sum(df$qualidade == "Excelente")
+      
+      facilitadores_criticos <- df %>%
+        
+        group_by(Facilitadores) %>%
+        
+        summarise(
+          media = mean(score, na.rm = TRUE),
+          .groups = "drop"
+        ) %>%
+        
+        filter(media < 60) %>%
+        
+        pull(Facilitadores)
+      
+      txt_fac <- if (length(facilitadores_criticos) == 0) {
+        
+        "Nenhum facilitador crítico identificado."
+        
+      } else {
+        
+        paste(
+          facilitadores_criticos,
+          collapse = ", "
+        )
+        
+      }
+      
+      div(
+        
+        style = "background-color:#f5f3f4;
+             padding:12px;
+             border-radius:6px;",
+        
+        tags$p(
+          
+          style = "margin:0;
+               text-align:justify;",
+          
+          tags$b(
+            "📊 Qualidade de Dados — Sessões de Mentoria: "
+          ),
+          
+          "Foram analisados ",
+          tags$b(total),
+          " participantes. ",
+          
+          "A taxa média de qualidade é de ",
+          tags$b(
+            paste0(media, "%")
+          ),
+          ".",
+          
+          tags$br(),
+          tags$br(),
+          
+          "🟢 Excelentes: ",
+          tags$b(excelentes),
+          
+          tags$br(),
+          tags$br(),
+          
+          "🔴 Críticos: ",
+          tags$b(criticos),
+          
+          tags$br(),
+          tags$br(),
+          
+          tags$b(
+            "⚠️ Facilitadores com baixa qualidade de registo: "
+          ),
+          
+          txt_fac,
+          
+          tags$br(),
+          tags$br(),
+          
+          "O indicador de qualidade segue a classificação: ",
+          "Excelente (100%), Bom (≥80%), Médio (≥60%) e Crítico (<60%)."
+          
+        )
+        
+      )
+      
+    })
+    
+    # =====================================================
+    # 📋 TABELA DE PRESENÇAS
+    # =====================================================
+    
+    output$tabelaPresencas_mentoria <- renderDataTable({
+      
+      df <- dados_filtered_mentoria()
+      
+      df[col_sessoes_mentoria] <- lapply(
+        df[col_sessoes_mentoria],
+        as.character
+      )
+      
+      df[col_sessoes_mentoria] <- lapply(
+        df[col_sessoes_mentoria],
+        formatar_pontos
+      )
+      
+      df$qualidade <- factor(
+        
+        df$qualidade,
+        
+        levels = c(
+          "Crítico",
+          "Médio",
+          "Bom",
+          "Excelente"
+        )
+        
+      )
+      
+      datatable(
+        
+        df[
+          order(df$qualidade),
+          
+          c(
+            "Comunidade",
+            "Nome_participante",
+            "score",
+            "qualidade",
+            col_sessoes_mentoria
+          )
+          
+        ],
+        
+        escape = FALSE,
+        
+        rownames = FALSE,
+        
+        options = list(
+          
+          pageLength = 10,
+          
+          scrollX = TRUE,
+          
+          dom = "lfrtip",
+          
+          columnDefs = list(
+            list(
+              className = "dt-center",
+              targets = "_all"
+            )
+          )
+          
+        )
+        
+      )
+      
+    })
+ ######################## ACOMPANHAMENTO
+    dados_filtrados_acomp <- reactive({
+      
+      df <- Acompanhamento_Individuais_Nexus
+      
+      if (input$distritoInput_mentoria_Acomp != "TODOS") {
+        df <- df %>%
+          filter(Distrito == input$distritoInput_mentoria_Acomp)
+      }
+      
+      if (input$comunidade_mentoria_Acomp != "TODAS") {
+        df <- df %>%
+          filter(Comunidade == input$comunidade_mentoria_Acomp)
+      }
+      
+      if (input$facilitador_mentoria_Acomp != "TODOS") {
+        df <- df %>%
+          filter(Facilitador == input$facilitador_mentoria_Acomp)
+      }
+      
+      df
+      
+    })
+    
+    output$grafico_acompanhamento_geral <- renderPlotly({
+      
+      df <- dados_filtrados_acomp()
+      
+      validate(
+        need(nrow(df) > 0, "Nenhum dado disponível.")
+      )
+      
+      # Identificar colunas das sessões individuais
+      sessao_cols <- names(df)[
+        grepl("^Sessão Individual", names(df))
+      ]
+      
+      # Ordenar as sessões corretamente
+      sessao_cols_ordenadas <- sessao_cols[
+        order(
+          as.numeric(
+            stringr::str_extract(sessao_cols, "\\d+")
+          )
+        )
+      ]
+      
+      # Transformar para formato longo
+      df_long <- df %>%
+        pivot_longer(
+          cols = all_of(sessao_cols_ordenadas),
+          names_to = "Sessao",
+          values_to = "Presenca"
+        ) %>%
+        filter(Presenca == "Presente") %>%
+        group_by(Sessao, Sexo) %>%
+        summarise(
+          Count = n(),
+          .groups = "drop"
+        )
+      
+      # Totais por sessão
+      totais_sessao <- df_long %>%
+        group_by(Sessao) %>%
+        summarise(
+          total = sum(Count),
+          .groups = "drop"
+        )
+      
+      # Posição dos rótulos dentro das barras
+      df_long <- df_long %>%
+        group_by(Sessao) %>%
+        arrange(Sexo) %>%
+        mutate(
+          y0 = cumsum(lag(Count, default = 0)),
+          y_center = y0 + Count / 2
+        )
+      
+      # Rótulos dentro das barras
+      annotations_segmentos <- lapply(
+        seq_len(nrow(df_long)),
+        function(i){
+          
+          list(
+            x = df_long$Sessao[i],
+            y = df_long$y_center[i],
+            text = df_long$Count[i],
+            showarrow = FALSE,
+            font = list(color = "white")
+          )
+          
+        }
+      )
+      
+      # Rótulos dos totais
+      annotations_totais <- lapply(
+        seq_len(nrow(totais_sessao)),
+        function(i){
+          
+          list(
+            x = totais_sessao$Sessao[i],
+            y = totais_sessao$total[i] + 2,
+            text = totais_sessao$total[i],
+            showarrow = FALSE,
+            font = list(size = 12)
+          )
+          
+        }
+      )
+      
+      plot_ly(
+        data = df_long,
+        x = ~Sessao,
+        y = ~Count,
+        color = ~Sexo,
+        colors = c(
+          "Feminino" = "#9942D4",
+          "Masculino" = "#F77333"
+        ),
+        type = "bar"
+      ) %>%
+        layout(
+          barmode = "stack",
+          paper_bgcolor = "#f5f3f4",
+          plot_bgcolor = "#f5f3f4",
+          xaxis = list(
+            title = ""
+          ),
+          yaxis = list(
+            title = "Número de Presenças"
+          ),
+          annotations = c(
+            annotations_segmentos,
+            annotations_totais
+          )
+        )
+      
+    })
+    
+    # =====================================================
+    # 📊 COLUNAS DE SESSÕES - ACOMPANHAMENTO
+    # =====================================================
+    
+    col_sessoes_ind <- names(Acompanhamento_Individuais_Nexus)[
+      grepl("^Sessão Individual", names(Acompanhamento_Individuais_Nexus))
+    ]
+    
+    col_sessoes_ind <- col_sessoes_ind[
+      order(
+        as.numeric(stringr::str_extract(col_sessoes_ind, "\\d+"))
+      )
+    ]
+    
+    # =====================================================
+    # 📊 DADOS FILTRADOS + SCORE QUALIDADE
+    # =====================================================
+    
+    dados_filtered_ind <- reactive({
+      
+      df <- Acompanhamento_Individuais_Nexus
+      
+      if (input$distritoInput_mentoria_Acomp != "TODOS") {
+        df <- df %>% filter(Distrito == input$distritoInput_mentoria_Acomp)
+      }
+      
+      if (input$comunidade_mentoria_Acomp != "TODAS") {
+        df <- df %>% filter(Comunidade == input$comunidade_mentoria_Acomp)
+      }
+      
+      if (input$facilitador_mentoria_Acomp != "TODOS") {
+        df <- df %>% filter(Facilitador == input$facilitador_mentoria_Acomp)
+      }
+      
+      total_sessoes <- length(col_sessoes_ind)
+      
+      df <- df %>%
+        mutate(
+          
+          sessoes_preenchidas = rowSums(
+            across(all_of(col_sessoes_ind), ~ !is.na(.) & . != ""),
+            na.rm = TRUE
+          ),
+          
+          score = round((sessoes_preenchidas / total_sessoes) * 100, 1),
+          
+          score = ifelse(score > 100, 100, score),
+          
+          qualidade = case_when(
+            score == 100 ~ "Excelente",
+            score >= 80 ~ "Bom",
+            score >= 60 ~ "Médio",
+            TRUE ~ "Crítico"
+          )
+        )
+      
+      df
+    })
+    
+    formatar_pontos <- function(x) {
+      
+      sapply(x, function(valor) {
+        
+        if (is.na(valor) || valor == "") {
+          
+          '<span style="color: grey; font-size: 40px;">&#9679;</span>'
+          
+        } else if (valor == "Presente") {
+          
+          '<span style="color: purple; font-size: 40px;">&#9679;</span>'
+          
+        } else if (valor == "Ausente") {
+          
+          '<span style="color: red; font-size: 40px;">&#9679;</span>'
+          
+        } else {
+          
+          '<span style="color: grey; font-size: 40px;">&#9679;</span>'
+          
+        }
+      })
+    }
+    output$tabelaAcompanhamento_Ind <- renderDataTable({
+      
+      df <- dados_filtered_ind()
+      
+      # transformar colunas em HTML bolinhas
+      df[col_sessoes_ind] <- lapply(df[col_sessoes_ind], as.character)
+      df[col_sessoes_ind] <- lapply(df[col_sessoes_ind], formatar_pontos)
+      
+      # ordenar qualidade
+      df$qualidade <- factor(
+        df$qualidade,
+        levels = c("Crítico", "Médio", "Bom", "Excelente")
+      )
+      
+      datatable(
+        df[
+          order(df$qualidade),
+          c(
+            "Comunidade",
+            "Nome_participante",
+            "score",
+            "qualidade",
+            col_sessoes_ind
+          )
+        ],
+        escape = FALSE,
+        rownames = FALSE,
+        options = list(
+          pageLength = 10,
+          scrollX = TRUE,
+          dom = "lfrtip",
+          columnDefs = list(
+            list(className = "dt-center", targets = "_all")
+          )
+        )
+      )
+      
+    })
 #   
   # ADMIN
   # Função principal de atualização
@@ -2545,27 +3527,27 @@ server <- function(input, output, session){
         client_id, client_secret, refresh_token
       )$access_token
       
-      # ## 1. Presenças Coletivas
-      # dados <- RZohoCreator::get_records(
-      #   "associacaomuva", "monitoria", "PRESENCAS_NEXUS_Report", access_token
-      # ) %>%
-      #   data.frame()
-      # 
-      # # Baixar
-      # writexl::write_xlsx(dados, path = "Presencas_Nexus.xlsx")
-      
-      ## 1. Presenças Coletivas
-      Qualidade_Sessoes <- RZohoCreator::get_records(
-        "associacaomuva", "monitoria", "Qualidade_Sess_es_Fazer_Prosperar_Report", access_token
+      # ## 1. Presenças Mentoria
+      dados <- RZohoCreator::get_records(
+        "associacaomuva", "monitoria", "PRESENCAS_NEXUS_Report", access_token
       ) %>%
         data.frame()
-      
+
       # Baixar
-      writexl::write_xlsx(Qualidade_Sessoes, path = "Qualidade_Sessoes.xlsx")
+      writexl::write_xlsx(dados, path = "Presencas_Nexus_Mentoria.xlsx")
+      
+      # 1. Presenças Coletivas
+      Acompanhamento <- RZohoCreator::get_records(
+        "associacaomuva", "monitoria", "NEXUS_ACOMPANHAMENTO_Report", access_token
+      ) %>%
+        data.frame()
+
+      # Baixar
+      writexl::write_xlsx(Acompanhamento , path = "Acompanhamento_Sessoes_Nexus.xlsx")
       
       return(list(
-        # dados = dados,
-        Qualidade_Sessoes = Qualidade_Sessoes
+         dados = dados,
+         Acompanhamento  = Acompanhamento 
       ))
     }, error = function(e) {
       message("Erro ao atualizar dados: ", e$message)

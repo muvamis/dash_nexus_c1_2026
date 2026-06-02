@@ -460,9 +460,97 @@ Perfil_Mentoria <- Lista_Grants_Mentoria %>%
     by = c("Nome_Participante", "Distrito")
   )
 
-table(Lista_Grants_Mentoria$Distrito, Lista_Grants_Mentoria$Recebeu_Grants)
 
 nao_encontrados <- Lista_Grants_Mentoria %>%
      anti_join(Perfil_NEXUS_GERAL, by = c("Nome_Participante", "Distrito"))
 
 # writexl::write_xlsx(Perfil_Mentoria, path = "Perfil_Mentoria.xlsx")
+
+Presencas_Nexus_Mentoria <- read_excel("Presencas_Nexus_Mentoria.xlsx")
+
+
+Presencas_Nexus_Mentoria <- Presencas_Nexus_Mentoria %>%
+  select(-c(2, 3, 19))
+
+
+Presencas_Nexus_Mentoria <- Presencas_Nexus_Mentoria %>%
+  rename(
+    Nome_participante = Nome_Participante.Nome_Participante,
+    Sexo = Nome_Participante.Sexo,
+    Idade   = Nome_Participante.Idade,
+    Estado_Civil = Nome_Participante.Estado_Civil,
+    Nivil_Educacao   = Nome_Participante.Nivil_Educacao,
+    Faz_Poupanca  = Nome_Participante.Faz_Poupanca,
+    Tem_Negocio = Nome_Participante.Tem_Negocio,
+    Situacao_Participante = Nome_Participante.Situacao_Participante,
+    Distrito = Nome_Participante.Distrito,
+    Comunidade = Nome_Participante.Comunidade,
+    Status = Nome_Participante.STATUS1,
+    Facilitadores = Control_Facilitador,
+    ID_MUVA = Nome_Participante.ID_Projecto,
+    Tipo_Sessao = Control_Sessao,
+    Nome_Sessao = Nome_da_Sess_o,
+    Presenca = Presen_a,
+    Turma = Nome_Participante.Turmas
+  )
+
+
+Presencas_Nexus_Mentoria <- Presencas_Nexus_Mentoria %>%
+  pivot_wider(
+    names_from = Nome_Sessao,  
+    values_from = Presenca,     
+    values_fn = first          
+  )
+
+
+Presencas_Nexus_Mentoria <- Presencas_Nexus_Mentoria %>%
+  mutate(Facilitadores = str_to_title(Facilitadores))
+
+
+sessao_cols <- names(Presencas_Nexus_Mentoria)[grepl("^Sessão_?\\d+$", names(Presencas_Nexus_Mentoria))]
+
+
+sessao_cols_ordenadas <- sessao_cols[order(as.numeric(gsub("Sessão_?", "", sessao_cols)))]
+
+####################### Acompanhamento Individual dos Negocios
+
+Acompanhamento_Individuais_Nexus <- read_excel("Acompanhamento_Sessoes_Nexus.xlsx")
+
+
+Acompanhamento_Individuais_Nexus <- Acompanhamento_Individuais_Nexus %>%
+  select(-c(5,6,13,14,19))
+
+
+Acompanhamento_Individuais_Nexus <- Acompanhamento_Individuais_Nexus %>%
+  rename(
+    Nome_participante = Nome_Participantes.Nome_Participante,
+    Sexo = Nome_Participantes.Sexo,
+    Facilitador = Nome_do_a_Facilitador_a,
+    Presenca = Presen_as,
+    Tipo_Sessao = Tipo_De_Sess_o,
+    Observacoes_Gerais = Observa_es_Gerais,
+    Data_Sessao = Data_da_Sess_o,
+    Situacao_Participante = Classifica_o_do_a_participante.zc_display_value,
+    Proximos_Passos = Pr_ximo_passo_combinado,
+    Nome_Sessao = N_mero_da_sess_o,
+    Acoes_Iniciadas = Ac_es_j_iniciadas,
+    Dificuldades_Mencionadas_Resolucao = Dificuldades_mencionadas_e_como_ultrapassou
+  )
+
+Acompanhamento_Individuais_Nexus <- Acompanhamento_Individuais_Nexus %>%
+  pivot_wider(
+    names_from = Nome_Sessao,
+    values_from = Presenca,
+    values_fn = first
+  )
+
+
+Acompanhamento_Individuais_Nexus <- Acompanhamento_Individuais_Nexus %>%
+  mutate(Facilitador = str_to_title(Facilitador))
+
+
+sessao_cols <- names(Acompanhamento_Individuais_Nexus)[grepl("^Sessão_?\\d+$", names(Acompanhamento_Individuais_Nexus))]
+
+
+sessao_cols_ordenadas <- sessao_cols[order(as.numeric(gsub("Sessão_?", "", sessao_cols)))]
+
