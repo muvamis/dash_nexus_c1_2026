@@ -395,34 +395,34 @@ ui <- navbarPage(
           mainPanel(
             
             uiOutput("texto_resumo_mentoria"),
-            
-            div(
-              class = "value-box-container",
-              
-              div(
-                class = "value-box blue",
-                textOutput("total_participantes_mentoria"),
-                div("Participantes")
-              ),
-              
-              div(
-                class = "value-box green",
-                textOutput("total_sessoes_mentoria"),
-                div("Sessões Realizadas")
-              ),
-              
-              div(
-                class = "value-box orange",
-                textOutput("total_acompanhamentos"),
-                div("Acompanhamentos")
-              ),
-              
-              div(
-                class = "value-box red",
-                textOutput("taxa_presenca"),
-                div("Taxa Média de Presença")
-              )
-            ),
+            # 
+            # div(
+            #   class = "value-box-container",
+            #   
+            #   div(
+            #     class = "value-box blue",
+            #     textOutput("total_participantes_mentoria"),
+            #     div("Participantes")
+            #   ),
+            #   
+            #   div(
+            #     class = "value-box green",
+            #     textOutput("total_sessoes_mentoria"),
+            #     div("Sessões Realizadas")
+            #   ),
+            #   
+            #   div(
+            #     class = "value-box orange",
+            #     textOutput("total_acompanhamentos"),
+            #     div("Acompanhamentos")
+            #   ),
+            #   
+            #   div(
+            #     class = "value-box red",
+            #     textOutput("taxa_presenca"),
+            #     div("Taxa Média de Presença")
+            #   )
+            # ),
             
             br(),
             
@@ -466,13 +466,12 @@ ui <- navbarPage(
               
               column(
                 12,
-                
                 div(
                   style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
                   tags$p(
                     style = "margin:0; text-align:justify;",
-                    tags$b("Sessões por Facilitador:"),
-                    "Mostra o número de sessões conduzidas por cada facilitador."
+                    tags$b("Tipos de Negócio dos Participantes:"),
+                    "O gráfico apresenta a distribuição dos participantes da mentoria por categoria de negócio, permitindo identificar as principais actividades económicas desenvolvidas e os sectores com maior concentração de empreendedores."
                   )
                 ),
                 
@@ -543,6 +542,50 @@ ui <- navbarPage(
             br(),
             
             dataTableOutput("tabelaPresencas_mentoria")
+          )
+        )
+      ),
+      
+      tabPanel(
+        title = tagList(icon("clipboard-check"), "Avaliação da Mentoria"),
+        
+        sidebarLayout(
+          
+          sidebarPanel(
+            
+            selectInput(
+              "filtro_distrito_mentoria_qual",
+              "Escolher Distrito",
+              choices = c("TODOS", unique(Qualidade_Mentoria$Distrito))
+            ),
+            
+            selectInput(
+              "filtro_comunidade_mentoria_qual",
+              "Escolher Comunidade",
+              choices = c("TODAS", unique(Qualidade_Mentoria$Comunidade))
+            ),
+            
+            selectInput(
+              "filtro_facilitador_mentoria_qual",
+              "Escolher Facilitador",
+              choices = c("TODOS", unique(Qualidade_Mentoria$Facilitadores))
+            )
+            
+          ),
+          
+          mainPanel(
+            
+            div(
+              style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+              tags$p(
+                style = "margin: 0; text-align: justify;",
+                tags$b("Avaliação das Sessões de Mentoria: "),
+                "Esta secção apresenta os resultados da avaliação das sessões de mentoria realizada pelos participantes. As avaliações refletem o nível de satisfação em relação à qualidade da facilitação, relevância dos conteúdos, utilidade prática dos temas abordados e participação durante as sessões. A análise permite monitorar a qualidade da mentoria, identificar pontos fortes e oportunidades de melhoria, contribuindo para o fortalecimento do processo de aprendizagem e desenvolvimento dos participantes."
+              )
+            ),
+            
+            DTOutput("tabela_qualidade_mentoria")
+            
           )
         )
       ),
@@ -3744,6 +3787,154 @@ server <- function(input, output, session){
       )
       
     })
+    
+    # =========================
+    # 1. Atualizar Distritos
+    # =========================
+    observe({
+      
+      updateSelectInput(
+        session,
+        "filtro_distrito_mentoria_qual",
+        choices = c("TODOS", sort(unique(Qualidade_Mentoria$Distrito))),
+        selected = "TODOS"
+      )
+      
+    })
+    
+    # =========================
+    # 2. Comunidades dependem do Distrito
+    # =========================
+    observeEvent(input$filtro_distrito_mentoria_qual, {
+      
+      dados <- Qualidade_Mentoria
+      
+      if (
+        !is.null(input$filtro_distrito_mentoria_qual) &&
+        input$filtro_distrito_mentoria_qual != "TODOS"
+      ) {
+        
+        dados <- dados %>%
+          filter(Distrito %in% input$filtro_distrito_mentoria_qual)
+        
+      }
+      
+      updateSelectInput(
+        session,
+        "filtro_comunidade_mentoria_qual",
+        choices = c("TODAS", sort(unique(dados$Comunidade))),
+        selected = "TODAS"
+      )
+      
+    })
+    
+    # =========================
+    # 3. Facilitadores dependem da Comunidade
+    # =========================
+    observeEvent(
+      c(
+        input$filtro_distrito_mentoria_qual,
+        input$filtro_comunidade_mentoria_qual
+      ),
+      {
+        
+        dados <- Qualidade_Mentoria
+        
+        if (
+          !is.null(input$filtro_distrito_mentoria_qual) &&
+          input$filtro_distrito_mentoria_qual != "TODOS"
+        ) {
+          
+          dados <- dados %>%
+            filter(Distrito %in% input$filtro_distrito_mentoria_qual)
+          
+        }
+        
+        if (
+          !is.null(input$filtro_comunidade_mentoria_qual) &&
+          input$filtro_comunidade_mentoria_qual != "TODAS"
+        ) {
+          
+          dados <- dados %>%
+            filter(Comunidade %in% input$filtro_comunidade_mentoria_qual)
+          
+        }
+        
+        updateSelectInput(
+          session,
+          "filtro_facilitador_mentoria_qual",
+          choices = c("TODOS", sort(unique(dados$Facilitadores))),
+          selected = "TODOS"
+        )
+        
+      }
+    )
+    
+    # =========================
+    # 4. Dados filtrados
+    # =========================
+    dados_filtrados_mentoria_qual <- reactive({
+      
+      dados <- Qualidade_Mentoria
+      
+      if (
+        !is.null(input$filtro_distrito_mentoria_qual) &&
+        input$filtro_distrito_mentoria_qual != "TODOS"
+      ) {
+        
+        dados <- dados %>%
+          filter(Distrito %in% input$filtro_distrito_mentoria_qual)
+        
+      }
+      
+      if (
+        !is.null(input$filtro_comunidade_mentoria_qual) &&
+        input$filtro_comunidade_mentoria_qual != "TODAS"
+      ) {
+        
+        dados <- dados %>%
+          filter(Comunidade %in% input$filtro_comunidade_mentoria_qual)
+        
+      }
+      
+      if (
+        !is.null(input$filtro_facilitador_mentoria_qual) &&
+        input$filtro_facilitador_mentoria_qual != "TODOS"
+      ) {
+        
+        dados <- dados %>%
+          filter(Facilitadores %in% input$filtro_facilitador_mentoria_qual)
+        
+      }
+      
+      dados
+      
+    })
+    
+    # =========================
+    # 5. Renderizar tabela
+    # =========================
+    output$tabela_qualidade_mentoria <- renderDT({
+      
+      df <- as.data.frame(
+        dados_filtrados_mentoria_qual(),
+        stringsAsFactors = FALSE
+      )
+      
+      rownames(df) <- NULL
+      
+      datatable(
+        df,
+        options = list(
+          pageLength = 10,
+          scrollX = TRUE
+        )
+      )
+      
+    })
+    
+    
+    
 #   
   # ADMIN
   # Função principal de atualização
@@ -3776,9 +3967,18 @@ server <- function(input, output, session){
       # Baixar
       writexl::write_xlsx(Acompanhamento , path = "Acompanhamento_Sessoes_Nexus.xlsx")
       
+      Qualidade_Mentoria <- RZohoCreator::get_records(
+        "associacaomuva", "monitoria", "Qualidade_Sess_es_Fazer_Prosperar_Report", access_token
+      ) %>%
+        data.frame()
+      
+      # Baixar
+      writexl::write_xlsx(Qualidade_Mentoria, path = "Qualidade_Mentoria.xlsx")
+      
       return(list(
          dados = dados,
-         Acompanhamento  = Acompanhamento 
+         Acompanhamento = Acompanhamento,
+         Qualidade_Mentoria = Qualidade_Mentoria 
       ))
     }, error = function(e) {
       message("Erro ao atualizar dados: ", e$message)
