@@ -164,21 +164,6 @@ ui <- navbarPage(
             ),
             plotlyOutput("grafico_Estado_Civil")
           )
-        # ),
-        # br(),
-        # fluidRow(
-        #   column(
-        #     12,
-        #     div(
-        #       style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
-        #       tags$p(
-        #         style = "margin: 0; text-align: justify;",
-        #         tags$b("Tipo de Negócios:"),
-        #         "O gráfico apresenta a distribuição dos participantes segundo o tipo de negócio em que estão envolvidos, permitindo compreender a diversidade de actividades económicas no programa."
-        #       )
-        #     ),
-        #     plotlyOutput("grafico_Negocios")
-        #   )
           
         )
         
@@ -372,27 +357,149 @@ ui <- navbarPage(
   ## PÁGINA 4 – ADMIN
   ############################################
   
-  # tabPanel(
-  #   title = tagList(icon("hands-helping"), "Mentoria"),
-  #   
-  #   # sidebarLayout(
-  #   #   sidebarPanel(
-  #   #     # actionButton(
-  #   #       # "botao_atualizar",
-  #   #       # "📥 Carregar / Atualizar Dados",
-  #   #       # class = "btn btn-warning"
-  #   #     )
-  #   #   ),
-  #     
-  #     mainPanel(
-  #       verbatimTextOutput("stat"),
-  #       dataTableOutput("tabela_")
-  #     )
-  #   ),
+
   tabPanel(
     title = tagList(icon("hands-helping"), "Mentoria"),
     
     tabsetPanel(
+      tabPanel(
+        title = tagList(icon("chart-line"), "Overview"),
+        
+        sidebarLayout(
+          
+          sidebarPanel(
+            
+            selectInput(
+              "overview_distrito_mentoria",
+              "Distrito:",
+              choices = c("TODOS", unique(Perfil_Mentoria$Distrito)),
+              selected = "TODOS"
+            ),
+            
+            selectInput(
+              "overview_comunidade_mentoria",
+              "Comunidade:",
+              choices = c("TODAS", unique(Perfil_Mentoria$Comunidade)),
+              selected = "TODAS"
+            ),
+            
+            selectInput(
+              "overview_facilitador_mentoria",
+              "Facilitador:",
+              choices = c("TODOS", unique(Perfil_Mentoria$Facilitadores_Mentoria)),
+              selected = "TODOS"
+            )
+            
+          ),
+          
+          mainPanel(
+            
+            uiOutput("texto_resumo_mentoria"),
+            
+            div(
+              class = "value-box-container",
+              
+              div(
+                class = "value-box blue",
+                textOutput("total_participantes_mentoria"),
+                div("Participantes")
+              ),
+              
+              div(
+                class = "value-box green",
+                textOutput("total_sessoes_mentoria"),
+                div("Sessões Realizadas")
+              ),
+              
+              div(
+                class = "value-box orange",
+                textOutput("total_acompanhamentos"),
+                div("Acompanhamentos")
+              ),
+              
+              div(
+                class = "value-box red",
+                textOutput("taxa_presenca"),
+                div("Taxa Média de Presença")
+              )
+            ),
+            
+            br(),
+            
+            fluidRow(
+              
+              column(
+                6,
+                
+                div(
+                  style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+                  tags$p(
+                    style = "margin:0; text-align:justify;",
+                    tags$b("Participantes da Mentoria:"),
+                    "O gráfico apresenta a distribuição dos participantes registados na componente de mentoria de acordo com os filtros seleccionados."
+                  )
+                ),
+                
+                plotlyOutput("overview_participantes_mentoria")
+                ),
+              
+              column(
+                6,
+                
+                div(
+                  style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+                  tags$p(
+                    style = "margin:0; text-align:justify;",
+                    tags$b("Participantes com Negócio:"),
+                    "Apresenta a distribuição dos participantes que já possuem ou não possuem um negócio (Tem_Negocio)."
+                  )
+                ),
+                
+                plotlyOutput("overview_tem_negocio")
+              )
+              
+            ),
+            
+            br(),
+            
+            fluidRow(
+              
+              column(
+                12,
+                
+                div(
+                  style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+                  tags$p(
+                    style = "margin:0; text-align:justify;",
+                    tags$b("Sessões por Facilitador:"),
+                    "Mostra o número de sessões conduzidas por cada facilitador."
+                  )
+                ),
+                
+                plotlyOutput("overview_tipo_negocio")
+              )
+              
+              # column(
+              #   6,
+              #   
+              #   div(
+              #     style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+              #     tags$p(
+              #       style = "margin:0; text-align:justify;",
+              #       tags$b("Acompanhamentos Individuais:"),
+              #       "Mostra a distribuição dos acompanhamentos realizados pelos facilitadores."
+              #     )
+              #   ),
+              #   
+              #   plotlyOutput("overview_acompanhamentos")
+              # )
+              
+            )
+            
+          )
+        )
+      ),
+      
       
       # ==========================
       # 🟢 SESSÕES
@@ -526,7 +633,7 @@ ui <- navbarPage(
       )
     )
     )
-)
+    )
 
 ############################################
 ## SERVER
@@ -2589,6 +2696,130 @@ server <- function(input, output, session){
       datatable(df, options = list(pageLength = 10))
     })
     ########################### PAGINA DE MENTORIA ##################
+    # 
+    dados_overview_mentoria <- reactive({
+      
+      df <- Perfil_Mentoria %>%
+        filter(Mentoria != "Não")   
+      
+      if(input$overview_distrito_mentoria != "TODOS"){
+        df <- df %>%
+          filter(Distrito == input$overview_distrito_mentoria)
+      }
+      
+      if(input$overview_comunidade_mentoria != "TODAS"){
+        df <- df %>%
+          filter(Comunidade == input$overview_comunidade_mentoria)
+      }
+      
+      if(input$overview_facilitador_mentoria != "TODOS"){
+        df <- df %>%
+          filter(Facilitadores_Mentoria == input$overview_facilitador_mentoria)
+      }
+      
+      df
+    })
+
+    output$overview_participantes_mentoria <- renderPlotly({
+      
+      dados <- dados_overview_mentoria() %>%
+        count(Distrito, Sexo) %>%
+        group_by(Distrito) %>%
+        mutate(
+          total_distrito = sum(n),
+          perc = round((n / total_distrito) * 100, 1),
+          label = paste0(n, " (", perc, "%)")
+        ) %>%
+        ungroup()
+      
+      plot_ly(
+        dados,
+        x = ~Distrito,
+        y = ~n,
+        color = ~Sexo,
+        colors = c(
+          "Feminino" = "#9942D4",
+          "Masculino" = "#F77333"
+        ),
+        type = "bar",
+        text = ~label  
+      ) %>%
+        layout(
+          barmode = "group",
+          title = "",
+          showlegend = TRUE,
+          paper_bgcolor = "#f5f3f4",
+          plot_bgcolor  = "#f5f3f4",
+          xaxis = list(title = "", tickangle = -45),
+          yaxis = list(title = "Número de participantes")
+        ) %>%
+        config(displayModeBar = FALSE) %>%
+        style(textposition = "outside")
+      
+    })
+
+    output$overview_tem_negocio <- renderPlotly({
+      
+      dados <- dados_overview_mentoria() %>%
+        count(Distrito, Sexo, Tem_Negocio) %>%
+        group_by(Distrito, Sexo) %>%
+        mutate(
+          total_grupo = sum(n),
+          perc = round(n / total_grupo * 100, 1),
+          label = paste0(n, " (", perc, "%)")
+        ) %>%
+        ungroup()
+      
+      plot_ly(
+        dados,
+        x = ~Distrito,
+        y = ~n,
+        color = ~Sexo,
+        colors = c(
+          "Feminino" = "#9942D4",
+          "Masculino" = "#F77333"
+        ),
+        type = "bar",
+        text = ~label
+      ) %>%
+        layout(
+          barmode = "group",
+          title = "",
+          paper_bgcolor = "#f5f3f4",
+          plot_bgcolor  = "#f5f3f4",
+          xaxis = list(title = "", tickangle = -45),
+          yaxis = list(title = "Número de participantes")
+        ) %>%
+        config(displayModeBar = FALSE) %>%
+        style(textposition = "outside")
+      
+    })
+    
+    
+    
+    
+    output$overview_tipo_negocio <- renderPlotly({
+      
+      dados <- Perfil_Mentoria %>%
+        count(Tipo_Negocio) %>%
+        arrange(desc(n))
+      
+      plot_ly(
+        dados,
+        x = ~reorder(Tipo_Negocio, n),
+        y = ~n,
+        type = "bar"
+      ) %>%
+        layout(
+          title = "Tipos de Negócio",
+          xaxis = list(title = ""),
+          yaxis = list(title = "Número de participantes"),
+          paper_bgcolor = "#f5f3f4",
+          plot_bgcolor = "#f5f3f4"
+        )
+      
+    })
+    
     
     observe({
       

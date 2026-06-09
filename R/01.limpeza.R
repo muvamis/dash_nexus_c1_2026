@@ -458,13 +458,65 @@ Perfil_Mentoria <- Lista_Grants_Mentoria %>%
   inner_join(
     Perfil_NEXUS_GERAL,
     by = c("Nome_Participante", "Distrito")
+  ) %>%
+  filter(Mentoria == "Sim")
+
+
+Perfil_Mentoria <- Perfil_Mentoria %>%
+  rename(
+    Tem_Negocio_Antes = Tem_Negocio
   )
+
+
+Perfil_Mentoria <- Perfil_Mentoria %>%
+  mutate(Tem_Negocio = "Sim")
+
 
 
 nao_encontrados <- Lista_Grants_Mentoria %>%
      anti_join(Perfil_NEXUS_GERAL, by = c("Nome_Participante", "Distrito"))
 
 # writexl::write_xlsx(Perfil_Mentoria, path = "Perfil_Mentoria.xlsx")
+
+
+# Perfil_Mentoria <- Perfil_Mentoria %>%
+#   mutate(
+#     Tipo_Negocio = trimws(Tipo_Negocio),
+#     Tipo_Negocio = tolower(Tipo_Negocio)
+#   )
+
+
+Perfil_Mentoria <- Perfil_Mentoria %>%
+  mutate(
+    Tipo_Negocio = case_when(
+
+      Tipo_Negocio %in% c(
+          "Carvao vegetal",
+          "Carvao vegetsl",
+          "carvao vegetal"
+        ) ~ "Carvão vegetal",
+
+      Tipo_Negocio %in% c(
+        "roupa",
+        "Roupa",
+        "Roupa da loja"
+      ) ~ "Roupa",
+
+      Tipo_Negocio %in% c(
+        "Refeiçoes",
+        "Refeições"
+      ) ~ "Refeições",
+
+        TRUE ~  Tipo_Negocio
+      )
+    )
+
+
+
+
+
+# table(Perfil_Mentoria$Tipo_Negocio)
+
 
 Presencas_Nexus_Mentoria <- read_excel("Presencas_Nexus_Mentoria.xlsx")
 
