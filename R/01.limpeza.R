@@ -234,8 +234,56 @@ Perfil_Mentoria <- Perfil_Mentoria %>%
 
 
 
-# table(Perfil_Mentoria$Tipo_Negocio)
+table(Perfil_Mentoria$Tipo_Negocio)
 
+library(dplyr)
+library(stringr)
+library(tidyr)
+library(plotly)
+
+Perfil_Mentoria_clean <- Perfil_Mentoria %>%
+  
+  # 1. separar múltiplos negócios (se estiverem na mesma célula)
+  separate_rows(Tipo_Negocio, sep = ",") %>%
+  
+  # 2. limpeza de texto
+  mutate(
+    tipo_negocio_lc = str_to_lower(str_squish(Tipo_Negocio))
+  ) %>%
+  
+  # 3. categorização
+  mutate(
+    categoria = case_when(
+      str_detect(tipo_negocio_lc, "tomate|cebola|frutas|banana|ananás|coco|cocos|legumes|vegetais|quiabo|ovos|galinha|peixe fresco|peixe seco|carvao|carv[oó]es?") ~ "Al.Perecível",
+      
+      str_detect(tipo_negocio_lc, "açucar|acucar|arroz|feijao|óleo|oleo|sal|produtos de primeira necessidade") ~ "Al.N.Perecível",
+      
+      str_detect(tipo_negocio_lc, "milho|mandioca|gergelim|ra[ií]zes|raizes|tuberculos|tubérculos") ~ "Agricultura",
+      
+      str_detect(tipo_negocio_lc, "arrufad|badjia|chamussa|bolinho|p[aã]o|papinha|refei|maheu") ~ "Al.Confec.",
+      
+      str_detect(tipo_negocio_lc, "sabao|sabonete|pomada|cosmet|higiene|len[çc]o") ~ "Higiene e Cosméticos",
+      
+      str_detect(tipo_negocio_lc, "roupa|capulana|chinelo|calçado|calcado|alfaiataria") ~ "Vestuário e Calçado",
+      
+      str_detect(tipo_negocio_lc, "carv[aã]o|gasolina|combustivel|combustível") ~ "Energia e Combustível",
+      
+      str_detect(tipo_negocio_lc, "carteira movel|taxi|mota") ~ "Serviços",
+      
+      str_detect(tipo_negocio_lc, "celulares|acessorios") ~ "Comércio Diverso",
+      
+      str_detect(tipo_negocio_lc, "peixe seco|camar[aã]o") ~ "Pescas",
+      
+      str_detect(tipo_negocio_lc, "aguardente|cerveja|vinho|bebidas") ~ "Bebidas",
+      
+      str_detect(tipo_negocio_lc, "palha|serralharia|marfim") ~ "Artesanato",
+      
+      TRUE ~ "Outros"
+    )
+  ) %>%
+  select(-tipo_negocio_lc)
+
+Perfil_Mentoria_clean$Tipo_Negocio
 
 Presencas_Nexus_Mentoria <- read_excel("Presencas_Nexus_Mentoria.xlsx")
 

@@ -2838,31 +2838,31 @@ server <- function(input, output, session){
       
     })
     
-    
-    
-    
     output$overview_tipo_negocio <- renderPlotly({
       
-      dados <- Perfil_Mentoria %>%
-        count(Tipo_Negocio) %>%
+      dados <- Perfil_Mentoria_clean %>%
+        filter(!is.na(categoria)) %>%
+        count(categoria, name = "n") %>%
         arrange(desc(n))
       
       plot_ly(
         dados,
-        x = ~reorder(Tipo_Negocio, n),
+        x = ~reorder(categoria, n),
         y = ~n,
-        type = "bar"
+        type = "bar",
+        text = ~n,
+        textposition = "outside",
+        marker = list(color = "#6F42C1")
       ) %>%
         layout(
           title = "Tipos de Negócio",
           xaxis = list(title = ""),
-          yaxis = list(title = "Número de participantes"),
+          yaxis = list(title = "Número de negócios"),
           paper_bgcolor = "#f5f3f4",
-          plot_bgcolor = "#f5f3f4"
+          plot_bgcolor = "#f5f3f4",
+          showlegend = FALSE
         )
-      
     })
-    
     
     observe({
       
@@ -3529,7 +3529,9 @@ server <- function(input, output, session){
       )
       
     })
+    
  ######################## ACOMPANHAMENTO
+    
     dados_filtrados_acomp <- reactive({
       
       df <- Acompanhamento_Individuais_Nexus
