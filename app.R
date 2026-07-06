@@ -653,6 +653,70 @@ ui <- navbarPage(
         )
       ),
       
+      tabPanel("🛍️ Feiras",
+                            
+                            tabsetPanel(
+                              
+                              tabPanel("📊 Visão Geral",
+                                       
+                                       sidebarLayout(
+                                         
+                                         sidebarPanel(
+                                           
+                                           selectInput("filtro_distrito_feiras", "Distrito:",
+                                                       choices = c("Todos", unique(Ficha_Monitoria_Feiras$Distrito)),
+                                                       selected = "Todos"),
+                                           
+                                           selectInput("filtro_comunidade_feiras", "Comunidade:",
+                                                       choices = c("Todas", unique(Ficha_Monitoria_Feiras$Local_Feira)),
+                                                       selected = "Todas"),
+                                           
+                                           selectInput("filtro_facilitador_feiras", "Facilitador:",
+                                                       choices = c("Todos", unique(Ficha_Monitoria_Feiras$Facilitador)),
+                                                       selected = "Todos")
+                                         ),
+                                         
+                                         mainPanel(
+                                           
+                                           # VALUE BOXES
+                                           fluidRow(
+                                             column(3,
+                                                    div(style = "background:#69C7BE;color:white;padding:15px;border-radius:12px;text-align:center;",
+                                                        h5("Total de Participantes"),
+                                                        h3(textOutput("total_participantes_feiras"))
+                                                    )
+                                             ),
+                                             
+                                             column(3,
+                                                    div(style = "background:#6f42c1;color:white;padding:15px;border-radius:12px;text-align:center;",
+                                                        h5("Mulheres"),
+                                                        h3(textOutput("mulheres_feiras"))
+                                                    )
+                                             ),
+                                             
+                                             column(3,
+                                                    div(style = "background:#F77333;color:white;padding:15px;border-radius:12px;text-align:center;",
+                                                        h5("Homens"),
+                                                        h3(textOutput("homens_feiras"))
+                                                    )
+                                             )
+                                           ),
+                                           
+                                           br(),
+                                           
+                                           plotlyOutput("grafico_feiras_categoria"),
+                                           br(),
+                                           DTOutput("tabela_feiras"),
+                                           br(),
+                                           
+                                           plotlyOutput("grafico_feiras_produtos")
+                                         )
+                                       )
+                              )
+                            )
+               ),
+      
+      
       # ==========================
       # 👤 ADMIN
       # ==========================
@@ -677,7 +741,6 @@ ui <- navbarPage(
     )
     )
     )
-
 ############################################
 ## SERVER
 ############################################
@@ -3935,7 +3998,161 @@ server <- function(input, output, session){
       
     })
     
+    ###################### FEIRAS NAS COMUNIDADES
+    observe({
+      
+      req(input$filtro_distrito_feiras)
+      
+      df <- Ficha_Monitoria_Feiras
+      
+      if (input$filtro_distrito_feiras != "Todos") {
+        df <- df %>% filter(Distrito == input$filtro_distrito_feiras)
+      }
+      
+      comunidades <- sort(unique(df$Comunidade))
+      comunidades <- c("Todas", comunidades)
+      
+      updateSelectInput(
+        session,
+        "filtro_comunidade_feiras",
+        choices = comunidades,
+        selected = "Todas"
+      )
+      
+    })
     
+    observe({
+      
+      req(input$filtro_comunidade_feiras)
+      
+      df <- Ficha_Monitoria_Feiras
+      
+      if (input$filtro_distrito_feiras != "Todos") {
+        df <- df %>% filter(Distrito == input$filtro_distrito_feiras)
+      }
+      
+      if (input$filtro_comunidade_feiras != "Todas") {
+        df <- df %>% filter(Comunidade == input$filtro_comunidade_feiras)
+      }
+      
+      facilitadores <- sort(unique(df$Facilitador))
+      facilitadores <- c("Todos", facilitadores)
+      
+      updateSelectInput(
+        session,
+        "filtro_facilitador_feiras",
+        choices = facilitadores,
+        selected = "Todos"
+      )
+      
+    })
+    
+    dados_feiras <- reactive({
+      
+      df <- Ficha_Monitoria_Feiras
+      
+      if (input$filtro_distrito_feiras != "Todos") {
+        df <- df %>% filter(Distrito == input$filtro_distrito_feiras)
+      }
+      
+      if (input$filtro_comunidade_feiras != "Todas") {
+        df <- df %>% filter(Comunidade == input$filtro_comunidade_feiras)
+      }
+      
+      if (input$filtro_facilitador_feiras != "Todos") {
+        df <- df %>% filter(Facilitador == input$filtro_facilitador_feiras)
+      }
+      
+      df
+      
+    })
+    output$total_participantes_feiras <- renderText({
+      n_distinct(dados_feiras()$Nome_Participante)
+    })
+    
+    
+    output$mulheres_feiras <- renderText({
+      dados_feiras() %>%
+        filter(Sexo == "Feminino") %>%
+        summarise(n = n_distinct(Nome_Participante)) %>%
+        pull(n)
+    })
+    
+    output$homens_feiras <- renderText({
+      dados_feiras() %>%
+        filter(Sexo == "Masculino") %>%
+        summarise(n = n_distinct(Nome_Participante)) %>%
+        pull(n)
+    })
+    
+    output$grafico_feiras_categoria <- renderPlotly({
+      
+      df <- dados_feiras() %>%
+        mutate(
+          Valor_Total_Vendido_MZN = as.numeric(Valor_Total_Vendido_MZN)
+        ) %>%
+        group_by(Categoria_Produto) %>%
+        summarise(
+          total_vendido = sum(Valor_Total_Vendido_MZN, na.rm = TRUE)
+        ) %>%
+        arrange(total_vendido)
+      
+      plot_ly(
+        df,
+        
+        x = ~total_vendido,
+        y = ~reorder(Categoria_Produto, total_vendido),
+        
+        type = "bar",
+        orientation = "h",
+        
+        # 👇 valor no meio da barra
+        text = ~paste0(total_vendido),
+        textposition = "inside",
+        
+        insidetextanchor = "middle",
+        
+        marker = list(
+          color = c("#0d6efd","#62919f","#4cc9f0", "#69C7BE","#F77333", "#ffc107", "#9942D4")
+        )
+      ) %>%
+        
+        layout(
+          
+          title = list(
+            text = "Receita por Categoria de Produto",
+            x = 0.5,
+            font = list(size = 16)
+          ),
+          
+          paper_bgcolor = "#f5f3f4",
+          plot_bgcolor  = "#f5f3f4",
+          
+          margin = list(t = 100, l = 150),
+          
+          xaxis = list(title = "Valor (MZN)"),
+          
+          yaxis = list(title = "", automargin = TRUE)
+        )
+    })
+    
+    
+    output$tabela_feiras <- renderDT({
+      
+      datatable(
+        dados_feiras(),
+        rownames = FALSE,
+        filter = "top",
+        extensions = "Buttons",
+        options = list(
+          pageLength = 10,
+          scrollX = TRUE,
+          dom = "Bfrtip",
+          buttons = c("copy", "csv", "excel", "print")
+        )
+      )
+      
+    })
     
 #   
   # ADMIN

@@ -448,4 +448,7 @@ totais <- Qualidade_Mentoria %>%
 # Adicionar a linha de totais no final
 Qualidade_Mentoria <- bind_rows(Qualidade_Mentoria, totais)
 
+###################### FEIRAS 
+
+Ficha_Monitoria_Feiras <- read_excel("Ficha_Monitoria_Feiras.xlsx")
 
