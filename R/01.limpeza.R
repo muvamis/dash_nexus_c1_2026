@@ -452,3 +452,4 @@ Qualidade_Mentoria <- bind_rows(Qualidade_Mentoria, totais)
 
 Ficha_Monitoria_Feiras <- read_excel("Ficha_Monitoria_Feiras.xlsx")
 
+# table(Ficha_Monitoria_Feiras$Categoria_Produto)
