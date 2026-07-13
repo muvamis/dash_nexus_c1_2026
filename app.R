@@ -3466,12 +3466,12 @@ server <- function(input, output, session){
           
         )
       
-      df <- df[
-        rowSums(
-          df[col_sessoes_mentoria] == "Presente",
-          na.rm = TRUE
-        ) > 0,
-      ]
+      # df <- df[
+      #   rowSums(
+      #     df[col_sessoes_mentoria] == "Presente",
+      #     na.rm = TRUE
+      #   ) > 0,
+      # ]
       
       df
       
