@@ -236,10 +236,7 @@ Perfil_Mentoria <- Perfil_Mentoria %>%
 
 table(Perfil_Mentoria$Tipo_Negocio)
 
-library(dplyr)
-library(stringr)
-library(tidyr)
-library(plotly)
+
 
 Perfil_Mentoria_clean <- Perfil_Mentoria %>%
   
@@ -326,52 +323,240 @@ Presencas_Nexus_Mentoria <- Presencas_Nexus_Mentoria %>%
   mutate(Facilitadores = str_to_title(Facilitadores))
 
 
+
+Lista_Situacao_Apos_Grants <- read_excel("Lista_Situacao_Apos_Grants.xlsx") %>%
+  rename(
+    Nome_participante = Nome_participante,
+    Situacao_Pos_Grants = Situacao_Pos_Grants
+  ) %>%
+  mutate(
+    Nome_participante = str_to_upper(str_trim(Nome_participante))
+  )
+
+
+Presencas_Nexus_Mentoria <- Presencas_Nexus_Mentoria %>%
+  mutate(
+    Nome_participante = str_to_upper(str_trim(Nome_participante))
+  ) %>%
+  left_join(
+    Lista_Situacao_Apos_Grants,
+    by = c("Distrito", "Nome_participante")
+  )
+
+sum(!is.na(Presencas_Nexus_Mentoria$Situacao_Pos_Grants))
+
+Presencas_Nexus_Mentoria <- Presencas_Nexus_Mentoria %>%
+  mutate(
+    Estado_Apos_Grant = case_when(
+      !is.na(Situacao_Pos_Grants) ~ Situacao_Pos_Grants,
+      TRUE ~ "IMPLEMENTOU/EM ACOMPANHAMENTO"
+    )
+  )
+
 sessao_cols <- names(Presencas_Nexus_Mentoria)[grepl("^Sessão_?\\d+$", names(Presencas_Nexus_Mentoria))]
 
 
 sessao_cols_ordenadas <- sessao_cols[order(as.numeric(gsub("Sessão_?", "", sessao_cols)))]
 
+
+
+table(Presencas_Nexus_Mentoria$Estado_Apos_Grant)
+
+Voz_Participante <- Presencas_Nexus_Mentoria %>%
+  filter(
+    (Distrito == "Nacala Porto" & Comunidade %in% c(
+      "ONTUPAIA",
+      "MATHAPUE",
+      "NAHERENQUE",
+      "NAUAIA",
+      "TRIANGULO"
+    )) |
+      (Distrito == "Monapo" & Comunidade %in% c(
+        "RAMIANE",
+        "TOPELANE",
+        "MESEREPANE"
+      ))
+  )
+
+# Nomes_Faltantes <- Perfil_Mentoria %>%
+#   anti_join(
+#     Presencas_Nexus_Mentoria,
+#     by = c("Nome_Participante" = "Nome_participante")
+#   )
+
+# writexl::write_xlsx(Voz_Participante, path = "Voz_Participante.xlsx")
+
 ####################### Acompanhamento Individual dos Negocios
 
-Acompanhamento_Individuais_Nexus <- read_excel("Acompanhamento_Sessoes_Nexus.xlsx")
+
+# =====================================================
+# IMPORTAR BASE
+# =====================================================
+
+Acompanhamento_Individuais_Nexus <- read_excel(
+  "Acompanhamento_Sessoes_Nexus.xlsx"
+)
 
 
-Acompanhamento_Individuais_Nexus <- Acompanhamento_Individuais_Nexus %>%
-  select(-c(5,6,13,14,19))
 
+# =====================================================
+# RENOMEAR VARIÁVEIS
+# =====================================================
 
 Acompanhamento_Individuais_Nexus <- Acompanhamento_Individuais_Nexus %>%
   rename(
+    Comunidade = Comunidade,
     Nome_participante = Nome_Participantes.Nome_Participante,
+    ID_Participante = Nome_Participantes.ID,
     Sexo = Nome_Participantes.Sexo,
+    Distrito = Distrito,
     Facilitador = Nome_do_a_Facilitador_a,
     Presenca = Presen_as,
-    Tipo_Sessao = Tipo_De_Sess_o,
-    Observacoes_Gerais = Observa_es_Gerais,
-    Data_Sessao = Data_da_Sess_o,
-    Situacao_Participante = Classifica_o_do_a_participante.zc_display_value,
-    Proximos_Passos = Pr_ximo_passo_combinado,
     Nome_Sessao = N_mero_da_sess_o,
+    Data_Sessao = Data_da_Sess_o,
+    Tipo_Sessao = Tipo_De_Sess_o,
+    Situacao_Participante = Classifica_o_do_a_participante.zc_display_value,
+    Observacoes_Gerais = Observa_es_Gerais,
+    Proximos_Passos = Pr_ximo_passo_combinado,
     Acoes_Iniciadas = Ac_es_j_iniciadas,
     Dificuldades_Mencionadas_Resolucao = Dificuldades_mencionadas_e_como_ultrapassou
   )
 
+
+
+# =====================================================
+# PADRONIZAR CAMPOS
+# =====================================================
+
 Acompanhamento_Individuais_Nexus <- Acompanhamento_Individuais_Nexus %>%
-  pivot_wider(
-    names_from = Nome_Sessao,
-    values_from = Presenca,
-    values_fn = first
+  mutate(
+    Nome_participante = str_to_upper(
+      str_trim(Nome_participante)
+    ),
+    
+    Facilitador = str_to_title(
+      Facilitador
+    ),
+    
+    Nome_Sessao = str_to_title(
+      str_trim(Nome_Sessao)
+    ),
+    
+    Presenca = str_to_title(
+      Presenca
+    )
   )
 
 
-Acompanhamento_Individuais_Nexus <- Acompanhamento_Individuais_Nexus %>%
-  mutate(Facilitador = str_to_title(Facilitador))
+
+# =====================================================
+# CRIAR BASE DE PRESENÇAS
+# APENAS CAMPOS NECESSÁRIOS
+# =====================================================
+
+Presencas_Individuais_Nexus <- Acompanhamento_Individuais_Nexus %>%
+  
+  select(
+    Distrito,
+    Comunidade,
+    Nome_participante,
+    ID_Participante,
+    Sexo,
+    Facilitador,
+    Nome_Sessao,
+    Presenca
+  )
 
 
-sessao_cols <- names(Acompanhamento_Individuais_Nexus)[grepl("^Sessão_?\\d+$", names(Acompanhamento_Individuais_Nexus))]
+
+# =====================================================
+# GARANTIR UMA LINHA POR PARTICIPANTE + SESSÃO
+# =====================================================
+
+Presencas_Individuais_Nexus <- Presencas_Individuais_Nexus %>%
+  
+  group_by(
+    Distrito,
+    Comunidade,
+    Nome_participante,
+    ID_Participante,
+    Sexo,
+    Facilitador,
+    Nome_Sessao
+  ) %>%
+  
+  summarise(
+    Presenca = first(Presenca),
+    .groups = "drop"
+  )
 
 
-sessao_cols_ordenadas <- sessao_cols[order(as.numeric(gsub("Sessão_?", "", sessao_cols)))]
+
+# =====================================================
+# TRANSFORMAR SESSÕES EM COLUNAS
+# =====================================================
+
+Presencas_Individuais_Nexus <- Presencas_Individuais_Nexus %>%
+  
+  pivot_wider(
+    names_from = Nome_Sessao,
+    values_from = Presenca
+  )
+
+
+
+# =====================================================
+# ORDENAR COLUNAS DAS SESSÕES
+# =====================================================
+
+col_sessoes_ind <- names(Presencas_Individuais_Nexus)[
+  grepl(
+    "^Sessão Individual",
+    names(Presencas_Individuais_Nexus)
+  )
+]
+
+
+col_sessoes_ind <- col_sessoes_ind[
+  order(
+    as.numeric(
+      str_extract(
+        col_sessoes_ind,
+        "\\d+"
+      )
+    )
+  )
+]
+
+
+
+# =====================================================
+# ORGANIZAR BASE FINAL
+# =====================================================
+
+Presencas_Individuais_Nexus <- Presencas_Individuais_Nexus %>%
+  
+  select(
+    Distrito,
+    Comunidade,
+    Nome_participante,
+    ID_Participante,
+    Sexo,
+    Facilitador,
+    all_of(col_sessoes_ind)
+  )
+
+
+
+# =====================================================
+# VERIFICAR DUPLICADOS
+# =====================================================
+
+Presencas_Individuais_Nexus %>%
+  count(
+    Nome_participante
+  ) %>%
+  filter(n > 1)
 
 
 ################### 

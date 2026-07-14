@@ -354,7 +354,7 @@ ui <- navbarPage(
   ), 
   
   ############################################
-  ## PÁGINA 4 – ADMIN
+  ## Mentoria
   ############################################
   
 
@@ -526,6 +526,28 @@ ui <- navbarPage(
           ),
           
           mainPanel(
+            fluidRow(
+              
+              column(
+                12,
+                
+                div(
+                  style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+                  
+                  tags$p(
+                    style = "margin:0; text-align:justify;",
+                    
+                    tags$b("Estado após Grant:"),
+                    
+                    "O gráfico apresenta a situação dos participantes após a atribuição do Grant, mostrando quantos implementaram o negócio, não implementaram ou abandonaram após receber o apoio financeiro."
+                  )
+                ),
+                
+                plotlyOutput("Estado_Apos_Grant")
+              )
+              ),
+            
+            br(),
             uiOutput("texto_participacao_Mentoria"),
             br(),
             withSpinner(plotlyOutput("grafico_Participacao_Mentoria", height = "500px")),
@@ -1035,35 +1057,50 @@ server <- function(input, output, session){
   output$grafico_distrito <- renderPlotly({
     
     df <- participantes_ativos() %>%
+      mutate(
+        Situacao_Participante = case_when(
+          Situacao_Participante %in% c("Deslocado VBG", "VBG Interno") ~ "VBG",
+          TRUE ~ Situacao_Participante
+        )
+      ) %>%
       count(Situacao_Participante, Sexo) %>%
       ungroup() %>%
       mutate(
-        total_geral = sum(n),  # soma geral de todos os participantes
+        total_geral = sum(n),
         perc = round(n / total_geral * 100, 1),
         label = paste0(n, " (", perc, "%)"),
-        Sexo = factor(Sexo, levels = c("Feminino","Masculino"))
+        Sexo = factor(Sexo, levels = c("Feminino", "Masculino"))
       )
     
     plot_ly(
-      df,
+      data = df,
       x = ~Situacao_Participante,
       y = ~n,
       color = ~Sexo,
       colors = c("Feminino" = "#9442d4", "Masculino" = "#f77333"),
       type = "bar",
       text = ~label,
-      textposition = "auto",           
-      textfont = list(size=14, color="white"),
-      hoverinfo = "y+text+name"
+      textposition = "auto",
+      textfont = list(size = 14, color = "white"),
+      hoverinfo = "text+name",
+      hovertext = ~paste0(
+        "<b>", Situacao_Participante, "</b><br>",
+        "Sexo: ", Sexo, "<br>",
+        "Participantes: ", n, "<br>",
+        "Percentagem: ", perc, "%"
+      )
     ) %>%
       layout(
         barmode = "stack",
         title = "",
         showlegend = TRUE,
         paper_bgcolor = "#f5f3f4",
-        plot_bgcolor  = "#f5f3f4",
+        plot_bgcolor = "#f5f3f4",
         xaxis = list(title = ""),
-        yaxis = list(title = "Número de participantes", range = c(0, 300))
+        yaxis = list(
+          title = "Número de participantes",
+          range = c(0, 300)
+        )
       )
   })
   
@@ -2033,7 +2070,16 @@ server <- function(input, output, session){
     dados_situacao <- reactive({
       
       df <- participantes_concluintes() %>%
-        dplyr::filter(concluiu == "Concluiu")
+        dplyr::filter(concluiu == "Concluiu") %>%
+        dplyr::mutate(
+          Situacao_Participante = dplyr::case_when(
+            Situacao_Participante %in% c(
+              "Deslocado VBG",
+              "VBG Interno"
+            ) ~ "VBG",
+            TRUE ~ Situacao_Participante
+          )
+        )
       
       total_geral <- nrow(df)
       
@@ -2054,45 +2100,36 @@ server <- function(input, output, session){
       plot_ly(
         data = dados_situacao(),
         x = ~Situacao_Participante,
-        y = ~n,   # ✔ valores reais
+        y = ~n,
         color = ~Sexo,
         colors = c("Feminino" = "#9942D4", "Masculino" = "#F77333"),
         type = "bar",
-        
         text = ~label,
-        
         textposition = "inside",
         insidetextanchor = "middle",
-        
         textfont = list(
           size = 12,
           color = "white"
         ),
-        
         hovertemplate = paste(
           "<b>Situação:</b> %{x}<br>",
           "<b>Sexo:</b> %{color}<br>",
-          "<b>Valor:</b> %{y}<br>",
+          "<b>Participantes:</b> %{y}<br>",
           "<b>% do total geral:</b> %{customdata:.1f}%<extra></extra>"
         ),
-        
         customdata = ~percent_global
       ) %>%
         layout(
           title = list(text = ""),
-          
           paper_bgcolor = "#f5f3f4",
           plot_bgcolor = "#f5f3f4",
-          
           xaxis = list(
             title = "Situação do Participante",
             tickangle = -25
           ),
-          
           yaxis = list(
             title = "Número de Participantes"
           ),
-          
           legend = list(title = list(text = "<b>Sexo</b>")),
           barmode = "stack"
         )
@@ -2101,13 +2138,19 @@ server <- function(input, output, session){
     output$texto_situacao_interpretacao <- renderUI({
       
       df_base <- participantes_concluintes() %>%
-        dplyr::filter(concluiu == "Concluiu")
+        dplyr::filter(concluiu == "Concluiu") %>%
+        dplyr::mutate(
+          Situacao_Participante = dplyr::case_when(
+            Situacao_Participante %in% c(
+              "Deslocado VBG",
+              "VBG Interno"
+            ) ~ "VBG",
+            TRUE ~ Situacao_Participante
+          )
+        )
       
       distrito_sel <- input$distritoInput_
       
-      # ================================
-      # 📌 CASO 1: TODOS
-      # ================================
       if (distrito_sel == "TODOS") {
         
         total_geral <- nrow(df_base)
@@ -2121,8 +2164,10 @@ server <- function(input, output, session){
         
         texto <- paste0(
           "No total, registam-se <b>", total_geral, "</b> concluintes ",
-          "(<b>", sexo_geral$n[sexo_geral$Sexo == "Feminino"], "</b> mulheres e ",
-          "<b>", sexo_geral$n[sexo_geral$Sexo == "Masculino"], "</b> homens). ",
+          "(<b>", sexo_geral$n[sexo_geral$Sexo == "Feminino"], 
+          "</b> mulheres e <b>", 
+          sexo_geral$n[sexo_geral$Sexo == "Masculino"], 
+          "</b> homens). ",
           
           "Em termos de situação dos concluintes, observa-se a seguinte distribuição: ",
           paste0(
@@ -2134,10 +2179,6 @@ server <- function(input, output, session){
         )
         
       } else {
-        
-        # ================================
-        # 📌 CASO 2: DISTRITO SELECIONADO
-        # ================================
         
         df_dist <- df_base %>%
           dplyr::filter(Distrito == distrito_sel)
@@ -2152,9 +2193,12 @@ server <- function(input, output, session){
           dplyr::mutate(percent = (n / sum(n)) * 100)
         
         texto <- paste0(
-          "No distrito de <b>", distrito_sel, "</b>, registam-se <b>", total_dist, "</b> concluintes ",
-          "(<b>", sexo_dist$n[sexo_dist$Sexo == "Feminino"], "</b> mulheres e ",
-          "<b>", sexo_dist$n[sexo_dist$Sexo == "Masculino"], "</b> homens). ",
+          "No distrito de <b>", distrito_sel, "</b>, registam-se <b>",
+          total_dist, "</b> concluintes ",
+          "(<b>", sexo_dist$n[sexo_dist$Sexo == "Feminino"],
+          "</b> mulheres e <b>",
+          sexo_dist$n[sexo_dist$Sexo == "Masculino"],
+          "</b> homens). ",
           
           "Em termos de situação dos concluintes, observa-se a seguinte distribuição: ",
           paste0(
@@ -2593,15 +2637,25 @@ server <- function(input, output, session){
       
     })
     
+  
     # ==========================================
-    # DADOS - SITUAÇÃO DOS QUE RECEBERAM GRANTS
+    # DADOS SITUAÇÃO DOS PARTICIPANTES QUE RECEBERAM GRANTS
     # ==========================================
+    
     dados_situacao_grants <- reactive({
       
       df <- Perfil_Mentoria %>%
-        
         dplyr::filter(
           Recebeu_Grants == "Sim"
+        ) %>%
+        dplyr::mutate(
+          Situacao_Participante = dplyr::case_when(
+            Situacao_Participante %in% c(
+              "Deslocado VBG",
+              "VBG Interno"
+            ) ~ "VBG",
+            TRUE ~ Situacao_Participante
+          )
         )
       
       # ----------------------------
@@ -2618,11 +2672,11 @@ server <- function(input, output, session){
       total_geral <- nrow(df)
       
       df %>%
-        
-        dplyr::count(Situacao_Participante, Sexo) %>%
-        
+        dplyr::count(
+          Situacao_Participante,
+          Sexo
+        ) %>%
         dplyr::mutate(
-          
           percent_global = (n / total_geral) * 100,
           
           label = paste0(
@@ -2630,6 +2684,14 @@ server <- function(input, output, session){
             " (",
             round(percent_global, 1),
             "%)"
+          ),
+          
+          Sexo = factor(
+            Sexo,
+            levels = c(
+              "Feminino",
+              "Masculino"
+            )
           )
         )
       
@@ -2639,6 +2701,7 @@ server <- function(input, output, session){
     # ==========================================
     # GRÁFICO
     # ==========================================
+    
     output$grafico_Receberam_Estado <- renderPlotly({
       
       plot_ly(
@@ -2686,7 +2749,7 @@ server <- function(input, output, session){
           ),
           
           paper_bgcolor = "#f5f3f4",
-          plot_bgcolor  = "#f5f3f4",
+          plot_bgcolor = "#f5f3f4",
           
           xaxis = list(
             title = "Situação do Participante",
@@ -2713,17 +2776,28 @@ server <- function(input, output, session){
     # ==========================================
     # TEXTO INTERPRETATIVO
     # ==========================================
+    
     output$texto_Receberam_grants <- renderUI({
       
       df <- Perfil_Mentoria %>%
-        
         dplyr::filter(
           Recebeu_Grants == "Sim"
+        ) %>%
+        dplyr::mutate(
+          Situacao_Participante = dplyr::case_when(
+            Situacao_Participante %in% c(
+              "Deslocado VBG",
+              "VBG Interno"
+            ) ~ "VBG",
+            TRUE ~ Situacao_Participante
+          )
         )
+      
       
       # ----------------------------
       # FILTRO DISTRITO
       # ----------------------------
+      
       distrito_sel <- input$filtro_grants_distrito
       
       if (distrito_sel != "Todos") {
@@ -2734,19 +2808,26 @@ server <- function(input, output, session){
           )
       }
       
+      
       # ----------------------------
       # TOTAIS
       # ----------------------------
+      
       total_geral <- nrow(df)
+      
       
       sexo_geral <- df %>%
         dplyr::count(Sexo)
       
+      
       situacao_geral <- df %>%
-        dplyr::count(Situacao_Participante) %>%
+        dplyr::count(
+          Situacao_Participante
+        ) %>%
         dplyr::mutate(
           percent = (n / sum(n)) * 100
         )
+      
       
       feminino <- ifelse(
         "Feminino" %in% sexo_geral$Sexo,
@@ -2754,15 +2835,18 @@ server <- function(input, output, session){
         0
       )
       
+      
       masculino <- ifelse(
         "Masculino" %in% sexo_geral$Sexo,
         sexo_geral$n[sexo_geral$Sexo == "Masculino"],
         0
       )
       
+      
       # ----------------------------
       # TEXTO
       # ----------------------------
+      
       texto <- paste0(
         
         "Dos participantes que receberam grants, registam-se <b>",
@@ -2786,8 +2870,8 @@ server <- function(input, output, session){
         "."
       )
       
+      
       HTML(
-        
         paste0(
           
           "<div style='background:#f5f3f4;
@@ -2803,6 +2887,8 @@ server <- function(input, output, session){
       )
       
     })
+    
+    
 ################# PAGINA QUALIDADE DAS SESSOES
     
     # =========================
@@ -2881,8 +2967,11 @@ server <- function(input, output, session){
       
       datatable(df, options = list(pageLength = 10))
     })
+    
+    #################################################################
     ########################### PAGINA DE MENTORIA ##################
-    # 
+    ##################################################################
+    
     dados_overview_mentoria <- reactive({
       
       df <- Perfil_Mentoria %>%
@@ -3007,6 +3096,148 @@ server <- function(input, output, session){
         )
     })
     
+    
+    
+    ####################### SESSOES DE MENTORIA
+    
+    dados_grant_filtrados <- reactive({
+      
+      df <- Presencas_Nexus_Mentoria
+      
+      
+      # Distrito
+      
+      if(input$distritoInput_mentoria != "TODOS"){
+        
+        df <- df %>%
+          filter(
+            Distrito == input$distritoInput_mentoria
+          )
+      }
+      
+      
+      # Comunidade
+      
+      if(input$comunidade_mentoria != "TODAS"){
+        
+        df <- df %>%
+          filter(
+            Comunidade == input$comunidade_mentoria
+          )
+      }
+      
+      
+      # Facilitador
+      
+      if(input$facilitador_mentoria != "TODOS"){
+        
+        df <- df %>%
+          filter(
+            Facilitadores == input$facilitador_mentoria
+          )
+      }
+      
+      
+      df
+      
+    })
+    
+    
+    output$Estado_Apos_Grant <- renderPlotly({
+      
+      
+      df <- dados_grant_filtrados() %>%
+        filter(
+          !is.na(Estado_Apos_Grant),
+          Estado_Apos_Grant != ""
+        ) %>%
+        count(
+          Estado_Apos_Grant
+        ) %>%
+        mutate(
+          Percentagem = round(
+            n / sum(n) * 100,
+            1
+          ),
+          
+          Label = paste0(
+            n,
+            " (",
+            Percentagem,
+            "%)"
+          )
+        )
+      
+    
+      cores_estado <- c(
+        "IMPLEMENTOU/EM ACOMPANHAMENTO" = "#ffc107",
+        "NAO IMPLEMENTOU NEGOCIO" = "#69C7BE",
+        "ABANDONOU/SUMIU COM O DINHEIRO" = "#a2d2ff"
+      )
+      
+      
+      plot_ly(
+        
+        data = df,
+        
+        x = ~n,
+        
+        y = ~reorder(Estado_Apos_Grant, n),
+        
+        type = "bar",
+        
+        orientation = "h",
+        
+        text = ~Label,
+        
+        textposition = "inside",
+        
+        insidetextanchor = "middle",
+        
+        textfont = list(
+          color = "white",
+          size = 14
+        ),
+        
+        marker = list(
+          color = ~cores_estado[Estado_Apos_Grant]
+        ),
+        
+        hovertemplate = paste(
+          "<b>%{y}</b><br>",
+          "Participantes: %{x}<br>",
+          "Percentagem: %{text}",
+          "<extra></extra>"
+        )
+        
+      ) %>%
+        
+        layout(
+          
+          paper_bgcolor = "#f5f3f4",
+          
+          plot_bgcolor = "#f5f3f4",
+          
+          xaxis = list(
+            title = "Número de Participantes"
+          ),
+          
+          yaxis = list(
+            title = ""
+          ),
+          
+          margin = list(
+            l = 250,
+            r = 50,
+            t = 30,
+            b = 50
+          )
+          
+        )
+      
+    })
+    
+    
     observe({
       
       req(input$distritoInput_mentoria)
@@ -3052,6 +3283,10 @@ server <- function(input, output, session){
       
     })
     
+    # =====================================================
+    # GRÁFICO ESTADO APÓS GRANT
+    # =====================================================
+   
     output$grafico_Participacao_Mentoria <- renderPlotly({
       
       df <- dados_filtrados_mentoria()
@@ -3674,264 +3909,371 @@ server <- function(input, output, session){
     })
     
  ######################## ACOMPANHAMENTO
+
+    # =====================================================
+    # IDENTIFICAR COLUNAS DAS SESSÕES INDIVIDUAIS
+    # =====================================================
+    
+    col_sessoes_ind <- names(Presencas_Individuais_Nexus)[
+      grepl(
+        "^Sessão Individual",
+        names(Presencas_Individuais_Nexus)
+      )
+    ]
+    
+    
+    # Ordenar sessões numericamente
+    
+    col_sessoes_ind <- col_sessoes_ind[
+      order(
+        as.numeric(
+          str_extract(col_sessoes_ind, "\\d+")
+        )
+      )
+    ]
+    
+    
+    
+    # =====================================================
+    # FILTROS DOS DADOS
+    # =====================================================
     
     dados_filtrados_acomp <- reactive({
       
-      df <- Acompanhamento_Individuais_Nexus
+      df <- Presencas_Individuais_Nexus
       
-      if (input$distritoInput_mentoria_Acomp != "TODOS") {
+      
+      # ----------------------------
+      # DISTRITO
+      # ----------------------------
+      
+      if(input$distritoInput_mentoria_Acomp != "TODOS"){
+        
         df <- df %>%
-          filter(Distrito == input$distritoInput_mentoria_Acomp)
+          filter(
+            Distrito == input$distritoInput_mentoria_Acomp
+          )
       }
       
-      if (input$comunidade_mentoria_Acomp != "TODAS") {
+      
+      # ----------------------------
+      # COMUNIDADE
+      # ----------------------------
+      
+      if(input$comunidade_mentoria_Acomp != "TODAS"){
+        
         df <- df %>%
-          filter(Comunidade == input$comunidade_mentoria_Acomp)
+          filter(
+            Comunidade == input$comunidade_mentoria_Acomp
+          )
       }
       
-      if (input$facilitador_mentoria_Acomp != "TODOS") {
+      
+      # ----------------------------
+      # FACILITADOR
+      # ----------------------------
+      
+      if(input$facilitador_mentoria_Acomp != "TODOS"){
+        
         df <- df %>%
-          filter(Facilitador == input$facilitador_mentoria_Acomp)
+          filter(
+            Facilitador == input$facilitador_mentoria_Acomp
+          )
       }
+      
       
       df
       
     })
     
+    
+
     output$grafico_acompanhamento_geral <- renderPlotly({
       
       df <- dados_filtrados_acomp()
       
       validate(
-        need(nrow(df) > 0, "Nenhum dado disponível.")
+        need(
+          nrow(df) > 0,
+          "Nenhum dado disponível."
+        )
       )
       
-      # Identificar colunas das sessões individuais
-      sessao_cols <- names(df)[
-        grepl("^Sessão Individual", names(df))
-      ]
       
-      # Ordenar as sessões corretamente
-      sessao_cols_ordenadas <- sessao_cols[
-        order(
-          as.numeric(
-            stringr::str_extract(sessao_cols, "\\d+")
-          )
-        )
-      ]
-      
-      # Transformar para formato longo
       df_long <- df %>%
         pivot_longer(
-          cols = all_of(sessao_cols_ordenadas),
+          cols = all_of(col_sessoes_ind),
           names_to = "Sessao",
           values_to = "Presenca"
         ) %>%
-        filter(Presenca == "Presente") %>%
-        group_by(Sessao, Sexo) %>%
-        summarise(
-          Count = n(),
-          .groups = "drop"
+        filter(
+          Presenca == "Presente"
+        ) %>%
+        count(
+          Sessao,
+          Sexo
         )
       
-      # Totais por sessão
-      totais_sessao <- df_long %>%
-        group_by(Sessao) %>%
-        summarise(
-          total = sum(Count),
-          .groups = "drop"
-        )
       
-      # Posição dos rótulos dentro das barras
-      df_long <- df_long %>%
-        group_by(Sessao) %>%
-        arrange(Sexo) %>%
-        mutate(
-          y0 = cumsum(lag(Count, default = 0)),
-          y_center = y0 + Count / 2
-        )
-      
-      # Rótulos dentro das barras
-      annotations_segmentos <- lapply(
-        seq_len(nrow(df_long)),
-        function(i){
-          
-          list(
-            x = df_long$Sessao[i],
-            y = df_long$y_center[i],
-            text = df_long$Count[i],
-            showarrow = FALSE,
-            font = list(color = "white")
-          )
-          
-        }
+      df_long$Sessao <- factor(
+        df_long$Sessao,
+        levels = col_sessoes_ind
       )
       
-      # Rótulos dos totais
-      annotations_totais <- lapply(
-        seq_len(nrow(totais_sessao)),
-        function(i){
-          
-          list(
-            x = totais_sessao$Sessao[i],
-            y = totais_sessao$total[i] + 2,
-            text = totais_sessao$total[i],
-            showarrow = FALSE,
-            font = list(size = 12)
-          )
-          
-        }
-      )
       
-      plot_ly(
+      p <- plot_ly(
         data = df_long,
+        
         x = ~Sessao,
-        y = ~Count,
+        
+        y = ~n,
+        
         color = ~Sexo,
+        
         colors = c(
           "Feminino" = "#9942D4",
           "Masculino" = "#F77333"
         ),
-        type = "bar"
+        
+        type = "bar",
+        
+        hoverinfo = "text",
+        
+        text = ~paste(
+          "Sexo:", Sexo,
+          "<br>Presenças:", n
+        )
+        
       ) %>%
+        
         layout(
           barmode = "stack",
+          
           paper_bgcolor = "#f5f3f4",
           plot_bgcolor = "#f5f3f4",
+          
           xaxis = list(
-            title = ""
+            title = "",
+            tickangle = -30
           ),
+          
           yaxis = list(
             title = "Número de Presenças"
-          ),
-          annotations = c(
-            annotations_segmentos,
-            annotations_totais
           )
+        )
+      
+      
+      # adicionar valores por cima das barras
+      
+      p %>%
+        add_text(
+          data = df_long,
+          x = ~Sessao,
+          y = ~n,
+          text = ~n,
+          textposition = "top",
+          showlegend = FALSE,
+          inherit = FALSE
         )
       
     })
     
-    # =====================================================
-    # 📊 COLUNAS DE SESSÕES - ACOMPANHAMENTO
-    # =====================================================
     
-    col_sessoes_ind <- names(Acompanhamento_Individuais_Nexus)[
-      grepl("^Sessão Individual", names(Acompanhamento_Individuais_Nexus))
-    ]
-    
-    col_sessoes_ind <- col_sessoes_ind[
-      order(
-        as.numeric(stringr::str_extract(col_sessoes_ind, "\\d+"))
-      )
-    ]
     
     # =====================================================
-    # 📊 DADOS FILTRADOS + SCORE QUALIDADE
+    # CALCULAR SCORE INDIVIDUAL
     # =====================================================
     
     dados_filtered_ind <- reactive({
       
-      df <- Acompanhamento_Individuais_Nexus
+      df <- dados_filtrados_acomp()
       
-      if (input$distritoInput_mentoria_Acomp != "TODOS") {
-        df <- df %>% filter(Distrito == input$distritoInput_mentoria_Acomp)
-      }
-      
-      if (input$comunidade_mentoria_Acomp != "TODAS") {
-        df <- df %>% filter(Comunidade == input$comunidade_mentoria_Acomp)
-      }
-      
-      if (input$facilitador_mentoria_Acomp != "TODOS") {
-        df <- df %>% filter(Facilitador == input$facilitador_mentoria_Acomp)
-      }
       
       total_sessoes <- length(col_sessoes_ind)
       
-      df <- df %>%
+      
+      validate(
+        need(
+          total_sessoes > 0,
+          "Nenhuma sessão encontrada."
+        )
+      )
+      
+      
+      df %>%
+        
         mutate(
           
-          sessoes_preenchidas = rowSums(
-            across(all_of(col_sessoes_ind), ~ !is.na(.) & . != ""),
-            na.rm = TRUE
-          ),
+          sessoes_realizadas =
+            rowSums(
+              across(
+                all_of(col_sessoes_ind),
+                ~ . == "Presente"
+              ),
+              na.rm = TRUE
+            ),
           
-          score = round((sessoes_preenchidas / total_sessoes) * 100, 1),
           
-          score = ifelse(score > 100, 100, score),
+          sessoes_faltadas =
+            rowSums(
+              across(
+                all_of(col_sessoes_ind),
+                ~ . == "Ausente"
+              ),
+              na.rm = TRUE
+            ),
           
-          qualidade = case_when(
-            score == 100 ~ "Excelente",
-            score >= 80 ~ "Bom",
-            score >= 60 ~ "Médio",
-            TRUE ~ "Crítico"
-          )
+          
+          score =
+            round(
+              (sessoes_realizadas / total_sessoes) * 100,
+              1
+            ),
+          
+          
+          qualidade =
+            case_when(
+              
+              score == 100 ~ "Excelente",
+              
+              score >= 80 ~ "Bom",
+              
+              score >= 60 ~ "Médio",
+              
+              TRUE ~ "Crítico"
+              
+            )
+          
         )
       
-      df
+      
     })
     
-    formatar_pontos <- function(x) {
+    
+    # =====================================================
+    # FORMATAR PRESENÇAS EM BOLINHAS
+    # =====================================================
+    
+    formatar_pontos <- function(x){
       
-      sapply(x, function(valor) {
-        
-        if (is.na(valor) || valor == "") {
+      sapply(
+        x,
+        function(valor){
           
-          '<span style="color: grey; font-size: 40px;">&#9679;</span>'
-          
-        } else if (valor == "Presente") {
-          
-          '<span style="color: purple; font-size: 40px;">&#9679;</span>'
-          
-        } else if (valor == "Ausente") {
-          
-          '<span style="color: red; font-size: 40px;">&#9679;</span>'
-          
-        } else {
-          
-          '<span style="color: grey; font-size: 40px;">&#9679;</span>'
+          if(
+            is.na(valor) || valor == ""
+          ){
+            
+            '<span style="color:grey;font-size:35px;">&#9679;</span>'
+            
+          } else if(
+            valor == "Presente"
+          ){
+            
+            '<span style="color:#9942D4;font-size:35px;">&#9679;</span>'
+            
+          } else if(
+            valor == "Ausente"
+          ){
+            
+            '<span style="color:#F77333;font-size:35px;">&#9679;</span>'
+            
+          } else {
+            
+            '<span style="color:grey;font-size:35px;">&#9679;</span>'
+            
+          }
           
         }
-      })
+      )
+      
     }
+    
+    
+    # =====================================================
+    # TABELA DE ACOMPANHAMENTO INDIVIDUAL
+    # =====================================================
+    
     output$tabelaAcompanhamento_Ind <- renderDataTable({
+      
       
       df <- dados_filtered_ind()
       
-      # transformar colunas em HTML bolinhas
-      df[col_sessoes_ind] <- lapply(df[col_sessoes_ind], as.character)
-      df[col_sessoes_ind] <- lapply(df[col_sessoes_ind], formatar_pontos)
       
-      # ordenar qualidade
-      df$qualidade <- factor(
-        df$qualidade,
-        levels = c("Crítico", "Médio", "Bom", "Excelente")
-      )
-      
-      datatable(
-        df[
-          order(df$qualidade),
-          c(
-            "Comunidade",
-            "Nome_participante",
-            "score",
-            "qualidade",
-            col_sessoes_ind
-          )
-        ],
-        escape = FALSE,
-        rownames = FALSE,
-        options = list(
-          pageLength = 10,
-          scrollX = TRUE,
-          dom = "lfrtip",
-          columnDefs = list(
-            list(className = "dt-center", targets = "_all")
-          )
+      validate(
+        need(
+          nrow(df) > 0,
+          "Nenhum participante encontrado."
         )
       )
       
+      
+      # Converter sessões em bolinhas
+      
+      df[col_sessoes_ind] <- lapply(
+        df[col_sessoes_ind],
+        formatar_pontos
+      )
+      
+      
+      df$qualidade <- factor(
+        df$qualidade,
+        levels = c(
+          "Crítico",
+          "Médio",
+          "Bom",
+          "Excelente"
+        )
+      )
+      
+      
+      tabela <- df[
+        order(df$qualidade),
+        
+        c(
+          "Distrito",
+          "Comunidade",
+          "Nome_participante",
+          "Sexo",
+          "score",
+          "qualidade",
+          col_sessoes_ind
+        )
+      ]
+      
+      
+      datatable(
+        
+        tabela,
+        
+        escape = FALSE,
+        
+        rownames = FALSE,
+        
+        options = list(
+          
+          pageLength = 10,
+          
+          scrollX = TRUE,
+          
+          dom = "lfrtip",
+          
+          columnDefs = list(
+            
+            list(
+              className = "dt-center",
+              targets = "_all"
+            )
+            
+          )
+          
+        )
+        
+      )
+      
     })
+    
+    ################ QUALIDADE MENTORIA
     
     # =========================
     # 1. Atualizar Distritos
