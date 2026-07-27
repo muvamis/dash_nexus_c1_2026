@@ -287,6 +287,15 @@ ui <- navbarPage(
       A avaliação reflete a experiência dos participantes, o engajamento e a relevância do conteúdo. 
       Esta análise permite identificar áreas de sucesso e oportunidades de melhoria, contribuindo para fortalecer a eficácia das futuras sessões e garantir maior impacto nas comunidades."
           )),
+        
+        # # h4("Distribuição da avaliação das sessões"),
+        # withSpinner(plotlyOutput("grafico_qualidade_sessoes", height = "500px")),
+        plotOutput(
+          "grafico_qualidade_sessoes",
+          height = "750px"
+        ),
+        
+        br(),
         DTOutput("tabela_qualidade")
       )
     )
@@ -4799,6 +4808,304 @@ server <- function(input, output, session){
       
     })
     
+    output$grafico_qualidade_sessoes <- renderPlot({
+      
+      
+      # ============================================================
+      # 1. Base inicial
+      # ============================================================
+      
+      dados <- Qualidade_Sessoes
+      
+      
+      # remover linha total
+      dados <- dados %>%
+        filter(
+          Distrito != "TOTAL",
+          !is.na(Nome_Sessao)
+        )
+      
+      
+      # ============================================================
+      # 2. Aplicar filtros
+      # ============================================================
+      
+      if(input$filtro_distrito_Qual != "TODOS"){
+        
+        dados <- dados %>%
+          filter(
+            Distrito == input$filtro_distrito_Qual
+          )
+      }
+      
+      
+      if(input$filtro_comunidade_Qual != "TODAS"){
+        
+        dados <- dados %>%
+          filter(
+            Comunidade == input$filtro_comunidade_Qual
+          )
+      }
+      
+      
+      if(input$filtro_facilitador_Qual != "TODOS"){
+        
+        dados <- dados %>%
+          filter(
+            Facilitadores == input$filtro_facilitador_Qual
+          )
+      }
+      
+      
+      # ============================================================
+      # 3. Agregar todas respostas por sessão
+      # ============================================================
+      
+      dados_sessoes_agregado <- dados %>%
+        
+        group_by(
+          Nome_Sessao
+        ) %>%
+        
+        summarise(
+          
+          Muito_Mau = sum(
+            Muito_Mau,
+            na.rm = TRUE
+          ),
+          
+          Mau = sum(
+            Mau,
+            na.rm = TRUE
+          ),
+          
+          Neutro = sum(
+            Neutro,
+            na.rm = TRUE
+          ),
+          
+          Bom = sum(
+            Bom,
+            na.rm = TRUE
+          ),
+          
+          Muito_Bom = sum(
+            Muito_Bom,
+            na.rm = TRUE
+          ),
+          
+          Total_Participantes = sum(
+            Total_Participantes,
+            na.rm = TRUE
+          ),
+          
+          .groups = "drop"
+        )
+      
+      
+      # ============================================================
+      # 4. Transformar para formato longo
+      # ============================================================
+      
+      dados_grafico <- dados_sessoes_agregado %>%
+        
+        pivot_longer(
+          
+          cols = c(
+            Muito_Bom,
+            Bom,
+            Neutro,
+            Mau,
+            Muito_Mau
+          ),
+          
+          names_to = "Avaliacao",
+          
+          values_to = "Quantidade"
+          
+        ) %>%
+        
+        group_by(
+          Nome_Sessao
+        ) %>%
+        
+        mutate(
+          
+          Percentagem =
+            Quantidade /
+            sum(Quantidade) * 100,
+          
+          Label = paste0(
+            Quantidade,
+            " (",
+            round(Percentagem,1),
+            "%)"
+          )
+          
+        ) %>%
+        
+        ungroup()
+      
+      
+      # ============================================================
+      # 5. Ordenar classificações
+      # Muito Bom -> Muito Mau
+      # ============================================================
+      
+      dados_grafico <- dados_grafico %>%
+        
+        mutate(
+          
+          Avaliacao = factor(
+            Avaliacao,
+            levels = c(
+              "Muito_Bom",
+              "Bom",
+              "Neutro",
+              "Mau",
+              "Muito_Mau"
+            )
+          )
+          
+        )
+      
+      
+      # ============================================================
+      # 6. Ordenar sessões
+      # Sessão 1 -> Sessão 12
+      # ============================================================
+      
+      dados_grafico$Nome_Sessao <- factor(
+        
+        dados_grafico$Nome_Sessao,
+        
+        levels = rev(
+          paste0(
+            "Sessão_",
+            1:12
+          )
+        )
+      )
+      
+      
+      # ============================================================
+      # 7. Gráfico
+      # ============================================================
+      
+      ggplot(
+        
+        dados_grafico,
+        
+        aes(
+          x = Nome_Sessao,
+          y = Percentagem,
+          fill = Avaliacao
+        )
+        
+      ) +
+        
+        geom_col(
+          width = 0.75
+        ) +
+        
+        
+        geom_text(
+          
+          aes(
+            label = ifelse(
+              Percentagem >= 5,
+              Label,
+              ""
+            )
+          ),
+          
+          position = position_stack(
+            vjust = 0.5
+          ),
+          
+          size = 5
+          
+        ) +
+        
+        
+        coord_flip() +
+        
+        
+        scale_fill_manual(
+          
+          values = c(
+            
+            "Muito_Bom" = "#9942D4",
+            
+            "Bom" = "#F77333",
+            
+            "Neutro" = "#ffc107",
+            
+            "Mau" = "#69C7BE",
+            
+            "Muito_Mau" = "#a2d2ff"
+            
+          ),
+          
+          breaks = c(
+            
+            "Muito_Bom",
+            "Bom",
+            "Neutro",
+            "Mau",
+            "Muito_Mau"
+            
+          )
+          
+        ) +
+        
+        
+        scale_y_continuous(
+          
+          limits = c(0,100),
+          
+          labels = function(x){
+            paste0(x,"%")
+          }
+          
+        ) +
+        
+        
+        labs(
+          
+          title = "Avaliação da Qualidade das Sessões",
+          
+          subtitle = "Distribuição das avaliações dos participantes por sessão",
+          
+          x = "",
+          
+          y = "Percentagem de participantes",
+          
+          fill = "Classificação"
+          
+        ) +
+        
+        
+        theme_minimal() +
+        
+        
+        theme(
+          
+          legend.position = "bottom",
+          
+          plot.title = element_text(
+            face = "bold",
+            size = 16
+          ),
+          
+          axis.text.y = element_text(
+            size = 11
+          )
+          
+        )
+      
+      
+    })
 #   
   # ADMIN
   # Função principal de atualização
