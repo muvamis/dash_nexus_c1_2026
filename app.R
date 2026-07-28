@@ -290,7 +290,7 @@ ui <- navbarPage(
         
         # # h4("Distribuição da avaliação das sessões"),
         # withSpinner(plotlyOutput("grafico_qualidade_sessoes", height = "500px")),
-        plotOutput(
+        plotlyOutput(
           "grafico_qualidade_sessoes",
           height = "750px"
         ),
@@ -614,6 +614,12 @@ ui <- navbarPage(
                 "Esta secção apresenta os resultados da avaliação das sessões de mentoria realizada pelos participantes. As avaliações refletem o nível de satisfação em relação à qualidade da facilitação, relevância dos conteúdos, utilidade prática dos temas abordados e participação durante as sessões. A análise permite monitorar a qualidade da mentoria, identificar pontos fortes e oportunidades de melhoria, contribuindo para o fortalecimento do processo de aprendizagem e desenvolvimento dos participantes."
               )
             ),
+            plotlyOutput(
+              "grafico_qualidade_mentoria",
+              height = "800px"
+            ),
+            
+            br(),
             
             DTOutput("tabela_qualidade_mentoria")
             
@@ -3179,9 +3185,9 @@ server <- function(input, output, session){
       
     
       cores_estado <- c(
-        "IMPLEMENTOU/EM ACOMPANHAMENTO" = "#ffc107",
+        "IMPLEMENTOU/EM ACOMPANHAMENTO" = "#9942D4",
         "NAO IMPLEMENTOU NEGOCIO" = "#69C7BE",
-        "ABANDONOU/SUMIU COM O DINHEIRO" = "#a2d2ff"
+        "ABANDONOU/SUMIU COM O DINHEIRO" = "#ffc107"
       )
       
       
@@ -4808,103 +4814,57 @@ server <- function(input, output, session){
       
     })
     
-    output$grafico_qualidade_sessoes <- renderPlot({
-      
+    output$grafico_qualidade_sessoes <- renderPlotly({
       
       # ============================================================
       # 1. Base inicial
       # ============================================================
       
-      dados <- Qualidade_Sessoes
-      
-      
-      # remover linha total
-      dados <- dados %>%
+      dados <- Qualidade_Sessoes %>%
         filter(
           Distrito != "TOTAL",
           !is.na(Nome_Sessao)
         )
-      
       
       # ============================================================
       # 2. Aplicar filtros
       # ============================================================
       
       if(input$filtro_distrito_Qual != "TODOS"){
-        
         dados <- dados %>%
-          filter(
-            Distrito == input$filtro_distrito_Qual
-          )
+          filter(Distrito == input$filtro_distrito_Qual)
       }
-      
       
       if(input$filtro_comunidade_Qual != "TODAS"){
-        
         dados <- dados %>%
-          filter(
-            Comunidade == input$filtro_comunidade_Qual
-          )
+          filter(Comunidade == input$filtro_comunidade_Qual)
       }
-      
       
       if(input$filtro_facilitador_Qual != "TODOS"){
-        
         dados <- dados %>%
-          filter(
-            Facilitadores == input$filtro_facilitador_Qual
-          )
+          filter(Facilitadores == input$filtro_facilitador_Qual)
       }
       
-      
       # ============================================================
-      # 3. Agregar todas respostas por sessão
+      # 3. Agregar por sessão
       # ============================================================
       
       dados_sessoes_agregado <- dados %>%
-        
-        group_by(
-          Nome_Sessao
-        ) %>%
-        
+        group_by(Nome_Sessao) %>%
         summarise(
           
-          Muito_Mau = sum(
-            Muito_Mau,
-            na.rm = TRUE
-          ),
-          
-          Mau = sum(
-            Mau,
-            na.rm = TRUE
-          ),
-          
-          Neutro = sum(
-            Neutro,
-            na.rm = TRUE
-          ),
-          
-          Bom = sum(
-            Bom,
-            na.rm = TRUE
-          ),
-          
-          Muito_Bom = sum(
-            Muito_Bom,
-            na.rm = TRUE
-          ),
-          
-          Total_Participantes = sum(
-            Total_Participantes,
-            na.rm = TRUE
-          ),
+          Muito_Mau  = sum(Muito_Mau, na.rm = TRUE),
+          Mau        = sum(Mau, na.rm = TRUE),
+          Neutro     = sum(Neutro, na.rm = TRUE),
+          Bom        = sum(Bom, na.rm = TRUE),
+          Muito_Bom  = sum(Muito_Bom, na.rm = TRUE),
           
           .groups = "drop"
+          
         )
       
-      
       # ============================================================
-      # 4. Transformar para formato longo
+      # 4. Formato longo
       # ============================================================
       
       dados_grafico <- dados_sessoes_agregado %>%
@@ -4920,190 +4880,482 @@ server <- function(input, output, session){
           ),
           
           names_to = "Avaliacao",
-          
           values_to = "Quantidade"
           
         ) %>%
         
-        group_by(
-          Nome_Sessao
-        ) %>%
+        group_by(Nome_Sessao) %>%
         
         mutate(
           
-          Percentagem =
-            Quantidade /
-            sum(Quantidade) * 100,
+          Percentagem = Quantidade / sum(Quantidade) * 100,
           
-          Label = paste0(
+          Texto = paste0(
+            "<b>", gsub("_", " ", Nome_Sessao), "</b>",
+            "<br><b>Classificação:</b> ", gsub("_", " ", Avaliacao),
+            "<br><b>Quantidade:</b> ", Quantidade,
+            "<br><b>Percentagem:</b> ", round(Percentagem, 1), "%"
+          ),
+          
+          Rotulo = paste0(
             Quantidade,
-            " (",
-            round(Percentagem,1),
-            "%)"
+            "<br>",
+            round(Percentagem, 1),
+            "%"
           )
           
         ) %>%
         
         ungroup()
       
-      
       # ============================================================
-      # 5. Ordenar classificações
-      # Muito Bom -> Muito Mau
+      # Ordenação
       # ============================================================
       
-      dados_grafico <- dados_grafico %>%
+      dados_grafico$Avaliacao <- factor(
         
-        mutate(
-          
-          Avaliacao = factor(
-            Avaliacao,
-            levels = c(
-              "Muito_Bom",
-              "Bom",
-              "Neutro",
-              "Mau",
-              "Muito_Mau"
-            )
-          )
-          
+        dados_grafico$Avaliacao,
+        
+        levels = c(
+          "Muito_Bom",
+          "Bom",
+          "Neutro",
+          "Mau",
+          "Muito_Mau"
         )
-      
-      
-      # ============================================================
-      # 6. Ordenar sessões
-      # Sessão 1 -> Sessão 12
-      # ============================================================
+        
+      )
       
       dados_grafico$Nome_Sessao <- factor(
         
         dados_grafico$Nome_Sessao,
         
-        levels = rev(
-          paste0(
-            "Sessão_",
-            1:12
-          )
-        )
+        levels = rev(paste0("Sessão_", 1:12))
+        
       )
       
+      # ============================================================
+      # Cores
+      # ============================================================
+      
+      cores <- c(
+        
+        "Muito_Bom" = "#9942D4",
+        "Bom" = "#F77333",
+        "Neutro" = "#ffc107",
+        "Mau" = "#69C7BE",
+        "Muito_Mau" = "#a2d2ff"
+        
+      )
       
       # ============================================================
-      # 7. Gráfico
+      # Construção do gráfico
       # ============================================================
       
-      ggplot(
+      p <- plot_ly()
+      
+      for(i in levels(dados_grafico$Avaliacao)){
         
-        dados_grafico,
+        df <- dados_grafico %>%
+          filter(Avaliacao == i)
         
-        aes(
-          x = Nome_Sessao,
-          y = Percentagem,
-          fill = Avaliacao
-        )
-        
-      ) +
-        
-        geom_col(
-          width = 0.75
-        ) +
-        
-        
-        geom_text(
+        p <- p %>%
           
-          aes(
-            label = ifelse(
-              Percentagem >= 5,
-              Label,
-              ""
-            )
+          add_trace(
+            
+            data = df,
+            
+            x = ~Quantidade,
+            y = ~Nome_Sessao,
+            
+            type = "bar",
+            
+            orientation = "h",
+            
+            name = gsub("_", " ", i),
+            
+            marker = list(
+              color = cores[i]
+            ),
+            
+            text = ~Rotulo,
+            
+            textposition = "auto",
+            
+            insidetextanchor = "middle",
+            
+            textfont = list(
+              size = 12,
+              color = "white"
+            ),
+            
+            hovertemplate = paste(
+              "%{customdata}<extra></extra>"
+            ),
+            
+            customdata = ~Texto
+            
+          )
+        
+      }
+      
+      # ============================================================
+      # Layout
+      # ============================================================
+      
+      p %>%
+        
+        layout(
+          
+          barmode = "stack",
+          
+          title = "",
+          
+          paper_bgcolor = "#f5f3f4",
+          
+          plot_bgcolor = "#f5f3f4",
+          
+          showlegend = TRUE,
+          
+          xaxis = list(
+            title = "Número de participantes"
           ),
           
-          position = position_stack(
-            vjust = 0.5
+          yaxis = list(
+            title = "",
+            automargin = TRUE
           ),
           
-          size = 5
-          
-        ) +
-        
-        
-        coord_flip() +
-        
-        
-        scale_fill_manual(
-          
-          values = c(
+          legend = list(
             
-            "Muito_Bom" = "#9942D4",
+            orientation = "h",
             
-            "Bom" = "#F77333",
+            x = 0,
             
-            "Neutro" = "#ffc107",
-            
-            "Mau" = "#69C7BE",
-            
-            "Muito_Mau" = "#a2d2ff"
+            y = -0.18
             
           ),
           
-          breaks = c(
+          margin = list(
+            l = 120,
+            r = 20,
+            t = 20,
+            b = 80
+          )
+          
+        ) %>%
+        
+        config(
+          
+          responsive = TRUE,
+          
+          displayModeBar = TRUE,
+          
+          displaylogo = FALSE,
+          
+          scrollZoom = TRUE,
+          
+          toImageButtonOptions = list(
             
-            "Muito_Bom",
-            "Bom",
-            "Neutro",
-            "Mau",
-            "Muito_Mau"
+            format = "png",
+            
+            filename = "Qualidade_das_Sessoes",
+            
+            height = 700,
+            
+            width = 1400,
+            
+            scale = 3
+            
+          ),
+          
+          modeBarButtonsToAdd = list(
+            
+            "zoom2d",
+            
+            "pan2d",
+            
+            "select2d",
+            
+            "lasso2d",
+            
+            "zoomIn2d",
+            
+            "zoomOut2d",
+            
+            "autoScale2d",
+            
+            "resetScale2d"
             
           )
           
-        ) +
-        
-        
-        scale_y_continuous(
+        )
+      
+    })
+    
+    
+    output$grafico_qualidade_mentoria <- renderPlotly({
+      
+      # ============================================================
+      # 1. Base inicial
+      # ============================================================
+      
+      dados <- Qualidade_Mentoria %>%
+        filter(
+          Distrito != "TOTAL",
+          !is.na(Nome_Sessao)
+        )
+      
+      # ============================================================
+      # 2. Aplicar filtros
+      # ============================================================
+      
+      if(input$filtro_distrito_mentoria_qual != "TODOS"){
+        dados <- dados %>%
+          filter(Distrito == input$filtro_distrito_mentoria_qual)
+      }
+      
+      if(input$filtro_comunidade_mentoria_qual != "TODAS"){
+        dados <- dados %>%
+          filter(Comunidade == input$filtro_comunidade_mentoria_qual)
+      }
+      
+      if(input$filtro_facilitador_mentoria_qual != "TODOS"){
+        dados <- dados %>%
+          filter(Facilitadores == input$filtro_facilitador_mentoria_qual)
+      }
+      
+      # ============================================================
+      # 3. Agregar respostas por sessão
+      # ============================================================
+      
+      dados_sessoes_agregado <- dados %>%
+        group_by(Nome_Sessao) %>%
+        summarise(
           
-          limits = c(0,100),
+          Muito_Mau = sum(Muito_Mau, na.rm = TRUE),
+          Mau = sum(Mau, na.rm = TRUE),
+          Neutro = sum(Neutro, na.rm = TRUE),
+          Bom = sum(Bom, na.rm = TRUE),
+          Muito_Bom = sum(Muito_Bom, na.rm = TRUE),
           
-          labels = function(x){
-            paste0(x,"%")
-          }
-          
-        ) +
-        
-        
-        labs(
-          
-          title = "Avaliação da Qualidade das Sessões",
-          
-          subtitle = "Distribuição das avaliações dos participantes por sessão",
-          
-          x = "",
-          
-          y = "Percentagem de participantes",
-          
-          fill = "Classificação"
-          
-        ) +
-        
-        
-        theme_minimal() +
-        
-        
-        theme(
-          
-          legend.position = "bottom",
-          
-          plot.title = element_text(
-            face = "bold",
-            size = 16
-          ),
-          
-          axis.text.y = element_text(
-            size = 11
-          )
+          .groups = "drop"
           
         )
       
+      # ============================================================
+      # 4. Formato longo
+      # ============================================================
+      
+      dados_grafico <- dados_sessoes_agregado %>%
+        
+        pivot_longer(
+          
+          cols = c(
+            Muito_Bom,
+            Bom,
+            Neutro,
+            Mau,
+            Muito_Mau
+          ),
+          
+          names_to = "Avaliacao",
+          values_to = "Quantidade"
+          
+        ) %>%
+        
+        group_by(Nome_Sessao) %>%
+        
+        mutate(
+          
+          Percentagem = Quantidade / sum(Quantidade) * 100,
+          
+          Texto = paste0(
+            "<b>", gsub("_"," ",Nome_Sessao), "</b>",
+            "<br><b>Classificação:</b> ", gsub("_"," ",Avaliacao),
+            "<br><b>Quantidade:</b> ", Quantidade,
+            "<br><b>Percentagem:</b> ", round(Percentagem,1), "%"
+          ),
+          
+          Rotulo = paste0(
+            Quantidade,
+            "<br>",
+            round(Percentagem,1),
+            "%"
+          )
+          
+        ) %>%
+        
+        ungroup()
+      
+      # ============================================================
+      # Ordenação
+      # ============================================================
+      
+      dados_grafico$Avaliacao <- factor(
+        
+        dados_grafico$Avaliacao,
+        
+        levels = c(
+          "Muito_Bom",
+          "Bom",
+          "Neutro",
+          "Mau",
+          "Muito_Mau"
+        )
+        
+      )
+      
+      dados_grafico$Nome_Sessao <- factor(
+        
+        dados_grafico$Nome_Sessao,
+        
+        levels = rev(paste0("Sessão_",1:12))
+        
+      )
+      
+      # ============================================================
+      # Cores
+      # ============================================================
+      
+      cores <- c(
+        
+        "Muito_Bom" = "#9942D4",
+        "Bom" = "#F77333",
+        "Neutro" = "#ffc107",
+        "Mau" = "#69C7BE",
+        "Muito_Mau" = "#a2d2ff"
+        
+      )
+      
+      # ============================================================
+      # Construção do gráfico
+      # ============================================================
+      
+      p <- plot_ly()
+      
+      for(i in levels(dados_grafico$Avaliacao)){
+        
+        df <- dados_grafico %>%
+          filter(Avaliacao == i)
+        
+        p <- p %>%
+          
+          add_trace(
+            
+            data = df,
+            
+            x = ~Quantidade,
+            y = ~Nome_Sessao,
+            
+            type = "bar",
+            
+            orientation = "h",
+            
+            name = gsub("_"," ",i),
+            
+            marker = list(
+              color = cores[i]
+            ),
+            
+            text = ~Rotulo,
+            
+            textposition = "auto",
+            
+            insidetextanchor = "middle",
+            
+            textfont = list(
+              size = 11,
+              color = "white"
+            ),
+            
+            hovertemplate = "%{customdata}<extra></extra>",
+            
+            customdata = ~Texto
+            
+          )
+        
+      }
+      
+      p %>%
+        
+        layout(
+          
+          barmode = "stack",
+          
+          title = "",
+          
+          showlegend = TRUE,
+          
+          paper_bgcolor = "#f5f3f4",
+          
+          plot_bgcolor = "#f5f3f4",
+          
+          xaxis = list(
+            title = "Número de participantes",
+            automargin = TRUE
+          ),
+          
+          yaxis = list(
+            title = "",
+            automargin = TRUE
+          ),
+          
+          legend = list(
+            orientation = "h",
+            x = 0,
+            y = -0.15
+          ),
+          
+          margin = list(
+            l = 120,
+            r = 30,
+            t = 20,
+            b = 80
+          ),
+          
+          height = 800
+          
+        ) %>%
+        
+        config(
+          
+          responsive = TRUE,
+          
+          displayModeBar = TRUE,
+          
+          displaylogo = FALSE,
+          
+          scrollZoom = TRUE,
+          
+          toImageButtonOptions = list(
+            
+            format = "png",
+            
+            filename = "Qualidade_Mentoria",
+            
+            height = 900,
+            
+            width = 1500,
+            
+            scale = 3
+            
+          ),
+          
+          modeBarButtonsToAdd = list(
+            
+            "zoom2d",
+            "pan2d",
+            "select2d",
+            "lasso2d",
+            "zoomIn2d",
+            "zoomOut2d",
+            "autoScale2d",
+            "resetScale2d"
+            
+          )
+          
+        )
       
     })
 #   
