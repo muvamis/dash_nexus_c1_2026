@@ -516,65 +516,71 @@ ui <- navbarPage(
         title = tagList(icon("chalkboard-teacher"), "Sessões de Mentoria"),
         
         sidebarLayout(
+          
           sidebarPanel(
+            
             selectInput(
               "distritoInput_mentoria",
               "Distrito:",
               choices = c("TODOS", unique(Presencas_Nexus_Mentoria$Distrito))
             ),
+            
             selectInput(
               "comunidade_mentoria",
               "Comunidade:",
               choices = c("TODAS", unique(Presencas_Nexus_Mentoria$Comunidade))
             ),
+            
             selectInput(
               "facilitador_mentoria",
               "Facilitadores:",
               choices = c("TODOS", unique(Presencas_Nexus_Mentoria$Facilitadores))
             )
+            
           ),
           
           mainPanel(
-            fluidRow(
-              
-              column(
-                12,
-                
-                div(
-                  style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
-                  
-                  tags$p(
-                    style = "margin:0; text-align:justify;",
-                    
-                    tags$b("Estado após Grant:"),
-                    
-                    "O gráfico apresenta a situação dos participantes após a atribuição do Grant, mostrando quantos implementaram o negócio, não implementaram ou abandonaram após receber o apoio financeiro."
-                  )
-                ),
-                
-                plotlyOutput("Estado_Apos_Grant")
-              )
-              ),
+            
+            uiOutput("texto_participacao_Mentoria"),
             
             br(),
-            uiOutput("texto_participacao_Mentoria"),
-            br(),
-            withSpinner(plotlyOutput("grafico_Participacao_Mentoria", height = "500px")),
+            
+            withSpinner(
+              plotlyOutput(
+                "grafico_Participacao_Mentoria",
+                height = "500px"
+              )
+            ),
+            
             br(), br(),
             
             uiOutput("texto_participa_sexo"),
+            
             br(),
-            withSpinner(plotlyOutput("grafico_Participacao_Sexo", height = "400px")),
+            
+            withSpinner(
+              plotlyOutput(
+                "grafico_Participacao_Sexo",
+                height = "400px"
+              )
+            ),
+            
             br(),
             
             uiOutput("pontosPresenca_mentoria"),
+            
             br(),
+            
             uiOutput("texto_presencas_mentoria"),
+            
             br(),
             
             dataTableOutput("tabelaPresencas_mentoria")
+            
           )
+          
         )
+        
       ),
       
       tabPanel(
@@ -689,6 +695,68 @@ ui <- navbarPage(
           )
         ),
       
+      tabPanel(
+        
+        title = tagList(icon("hand-holding-usd"), "Resultados dos Grants"),
+        
+        sidebarLayout(
+          
+          sidebarPanel(
+            
+            selectInput(
+              "distritoInput_Resul_grants",
+              "Escolher Distrito",
+              choices = c(
+                "TODOS",
+                unique(Nexus_Grants$Distrito)
+              )
+            ),
+            
+            
+            selectInput(
+              "comunidade_Resul_grants",
+              "Escolher Comunidade",
+              choices = c(
+                "TODAS",
+                unique(Nexus_Grants$Comunidade)
+              )
+            )
+            
+          ),
+          
+          
+          mainPanel(
+            
+            div(
+              style = "background-color:#f5f3f4; padding:12px; border-radius:6px; margin-bottom:20px;",
+              
+              tags$p(
+                
+                style = "margin:0; text-align:justify;",
+                
+                tags$b("Resultados dos Grants: "),
+                
+                "Esta secção apresenta os principais resultados do acompanhamento dos participantes beneficiários dos grants do Projeto Nexus. São apresentados indicadores relacionados com a recuperação do investimento inicial, desempenho dos negócios, participantes com dificuldades e potenciais desistências, permitindo monitorar o impacto do apoio financeiro e identificar comunidades que necessitam de acompanhamento adicional."
+                
+              )
+              
+            ),
+            
+            
+            plotlyOutput(
+              "grafico_resultados_grants",
+              height = "550px"
+            ),
+            
+            br(),
+            
+            DTOutput(
+              "tabela_resultados_grants"
+            )
+            
+          )
+        )
+        ),
       ############################################
       ## 🛍️ PÁGINA FEIRAS
       ############################################
@@ -858,6 +926,7 @@ ui <- navbarPage(
     )
   )
 )
+
 ############################################
 ## SERVER
 ############################################
@@ -3115,41 +3184,72 @@ server <- function(input, output, session){
     
     ####################### SESSOES DE MENTORIA
     
+    # =====================================================
+    # ATUALIZAR COMUNIDADES CONFORME O DISTRITO
+    # =====================================================
+    
+    # =====================================================
+    # ATUALIZAR COMUNIDADES PELO DISTRITO
+    # =====================================================
+    
+    observe({
+      
+      df <- Nexus_Grants
+      
+      
+      if(input$distritoInput_Resul_grants != "TODOS"){
+        
+        df <- df %>%
+          filter(
+            Distrito == input$distritoInput_Resul_grants
+          )
+        
+      }
+      
+      
+      updateSelectInput(
+        
+        session,
+        
+        "comunidade_Resul_grants",
+        
+        choices = c(
+          "TODAS",
+          sort(unique(df$Comunidade))
+        ),
+        
+        selected = "TODAS"
+        
+      )
+      
+    })
+    
     dados_grant_filtrados <- reactive({
       
-      df <- Presencas_Nexus_Mentoria
+      df <- Nexus_Grants
       
       
       # Distrito
       
-      if(input$distritoInput_mentoria != "TODOS"){
+      if(input$distritoInput_Resul_grants != "TODOS"){
         
         df <- df %>%
           filter(
-            Distrito == input$distritoInput_mentoria
+            Distrito == input$distritoInput_Resul_grants
           )
+        
       }
       
       
       # Comunidade
       
-      if(input$comunidade_mentoria != "TODAS"){
+      if(input$comunidade_Resul_grants != "TODAS"){
         
         df <- df %>%
           filter(
-            Comunidade == input$comunidade_mentoria
+            Comunidade == input$comunidade_Resul_grants
           )
-      }
-      
-      
-      # Facilitador
-      
-      if(input$facilitador_mentoria != "TODOS"){
         
-        df <- df %>%
-          filter(
-            Facilitadores == input$facilitador_mentoria
-          )
       }
       
       
@@ -3158,99 +3258,245 @@ server <- function(input, output, session){
     })
     
     
-    output$Estado_Apos_Grant <- renderPlotly({
+    dados_resultados_grants <- reactive({
+      
+      df <- dados_grant_filtrados()
       
       
-      df <- dados_grant_filtrados() %>%
-        filter(
-          !is.na(Estado_Apos_Grant),
-          Estado_Apos_Grant != ""
-        ) %>%
-        count(
-          Estado_Apos_Grant
-        ) %>%
+      resultado <- tibble(
+        
+        Indicador = c(
+          "Receberam Grants",
+          "Sucesso no Negócio",
+          "Recuperaram Investimento",
+          "Possíveis Desistentes"
+        ),
+        
+        
+        Quantidade = c(
+          
+          sum(df$Total_Receberam_Grant),
+          
+          sum(df$Sucesso_Negocio),
+          
+          sum(df$Recuperou_Investimento),
+          
+          sum(df$Possiveis_Desistentes)
+          
+        )
+        
+      ) %>%
+        
+        
         mutate(
+          
           Percentagem = round(
-            n / sum(n) * 100,
+            Quantidade /
+              first(Quantidade) * 100,
             1
           ),
           
+          
           Label = paste0(
-            n,
+            Quantidade,
             " (",
             Percentagem,
             "%)"
           )
+          
         )
       
+      
+      resultado
+      
+    })
     
-      cores_estado <- c(
-        "IMPLEMENTOU/EM ACOMPANHAMENTO" = "#9942D4",
-        "NAO IMPLEMENTOU NEGOCIO" = "#69C7BE",
-        "ABANDONOU/SUMIU COM O DINHEIRO" = "#ffc107"
+    output$grafico_resultados_grants <- renderPlotly({
+      
+      
+      df <- dados_resultados_grants()
+      
+      cores <- c(
+        
+        "Receberam Grants" ="#F77333",
+        
+        "Sucesso no Negócio" = "#9942D4",
+        
+        "Recuperaram Investimento" = "#ffc107",
+        
+        "Possíveis Desistentes" = "#69C7BE"
+        
       )
+      
       
       
       plot_ly(
         
-        data = df,
+        df,
         
-        x = ~n,
+        x = ~Quantidade,
         
-        y = ~reorder(Estado_Apos_Grant, n),
+        y = ~reorder(Indicador,Quantidade),
         
         type = "bar",
         
         orientation = "h",
         
+        
         text = ~Label,
+        
         
         textposition = "inside",
         
+        
         insidetextanchor = "middle",
         
-        textfont = list(
-          color = "white",
-          size = 14
-        ),
         
         marker = list(
-          color = ~cores_estado[Estado_Apos_Grant]
+          
+          color = ~cores[Indicador]
+          
         ),
         
+        
+        textfont = list(
+          
+          color="white",
+          
+          size=14
+          
+        ),
+        
+        
         hovertemplate = paste(
+          
           "<b>%{y}</b><br>",
+          
           "Participantes: %{x}<br>",
-          "Percentagem: %{text}",
+          
+          "%{text}",
+          
           "<extra></extra>"
+          
         )
+        
         
       ) %>%
         
+        
         layout(
           
-          paper_bgcolor = "#f5f3f4",
+          title = "Resultados dos Grants - Projeto Nexus",
           
-          plot_bgcolor = "#f5f3f4",
           
-          xaxis = list(
-            title = "Número de Participantes"
+          paper_bgcolor="#f5f3f4",
+          
+          plot_bgcolor="#f5f3f4",
+          
+          
+          xaxis=list(
+            title="Número de participantes"
           ),
           
-          yaxis = list(
-            title = ""
+          
+          yaxis=list(
+            title=""
           ),
           
-          margin = list(
-            l = 250,
-            r = 50,
-            t = 30,
-            b = 50
+          
+          margin=list(
+            l=220,
+            r=40,
+            t=50,
+            b=50
           )
           
         )
       
+      
     })
+    
+#     
+    output$tabela_resultados_grants <- renderDT({
+
+      dados_grant_filtrados() %>%
+
+        mutate(
+
+          `Taxa Recuperação (%)` =
+            round(
+              Recuperou_Investimento /
+                Total_Receberam_Grant * 100,
+              1
+            ),
+
+          `Taxa Sucesso (%)` =
+            round(
+              Sucesso_Negocio /
+                Total_Receberam_Grant * 100,
+              1
+            ),
+
+          `Taxa Dificuldades (%)` =
+            round(
+              Dificuldades_Negocio /
+                Total_Receberam_Grant * 100,
+              1
+            ),
+
+          `Taxa Desistência (%)` =
+            round(
+              Possiveis_Desistentes /
+                Total_Receberam_Grant * 100,
+              1
+            )
+
+        ) %>%
+
+        select(
+
+          Distrito,
+
+          Comunidade,
+
+          Total_Receberam_Grant,
+
+          Recuperou_Investimento,
+
+          `Taxa Recuperação (%)`,
+
+          Sucesso_Negocio,
+
+          `Taxa Sucesso (%)`,
+
+          Dificuldades_Negocio,
+
+          `Taxa Dificuldades (%)`,
+
+          Possiveis_Desistentes,
+
+          `Taxa Desistência (%)`
+
+        )
+
+    },
+    options = list(
+
+      pageLength = 14,
+
+      scrollX = TRUE,
+
+      dom = "Bfrtip",
+
+      buttons = c(
+        "copy",
+        "csv",
+        "excel",
+        "print"
+      )
+
+    ))
+
     
     
     observe({

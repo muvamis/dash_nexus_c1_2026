@@ -638,3 +638,99 @@ Qualidade_Mentoria <- bind_rows(Qualidade_Mentoria, totais)
 Ficha_Monitoria_Feiras <- read_excel("Ficha_Monitoria_Feiras.xlsx")
 
 # table(Ficha_Monitoria_Feiras$Categoria_Produto)
+
+
+
+# ============================================================
+# BASE DOS GRANTS - NEXUS
+# ============================================================
+
+Nexus_Grants <- tibble(
+  
+  Distrito = c(
+    rep("Nacala Porto",7),
+    rep("Monapo",7)
+  ),
+  
+  
+  Comunidade = c(
+    "ONTUPAIA",
+    "NAHERENQUE",
+    "MURRUPELANE",
+    "MOCONE",
+    "MATHAPUE",
+    "NAUAIA",
+    "TRIANGULO",
+    "MESEREPANE",
+    "MONAPO RIO",
+    "RAMIANE",
+    "MUELEGE",
+    "TOPELANE",
+    "28 DE SETEMBRO",
+    "MICOLENE"
+  ),
+  
+  
+  Total_Receberam_Grant = c(
+    33,27,14,22,43,25,34,
+    30,25,24,21,27,24,26
+  ),
+  
+  
+  Recuperou_Investimento = c(
+    12,8,4,15,4,5,11,
+    3,4,5,6,9,2,2
+  ),
+  
+  
+  Sucesso_Negocio = c(
+    14,10,4,15,20,12,15,
+    18,23,19,21,19,18,15
+  ),
+  
+  
+  Dificuldades_Negocio = c(
+    1,5,0,3,12,4,2,
+    2,4,2,3,0,2,4
+  ),
+  
+  
+  Possiveis_Desistentes = c(
+    6,4,10,2,6,4,6,
+    8,7,3,0,2,3,6
+  )
+  
+)
+
+Nexus_Grants <- Nexus_Grants %>%
+  
+  mutate(
+    
+    Taxa_Recuperacao = round(
+      Recuperou_Investimento /
+        Total_Receberam_Grant * 100,
+      1
+    ),
+    
+    
+    Taxa_Sucesso = round(
+      Sucesso_Negocio /
+        Total_Receberam_Grant * 100,
+      1
+    ),
+    
+    
+    Taxa_Dificuldade = round(
+      Dificuldades_Negocio /
+        Total_Receberam_Grant * 100,
+      1
+    ),
+    
+    
+    Taxa_Desistencia = round(
+      Possiveis_Desistentes /
+        Total_Receberam_Grant * 100,
+      1
+    )
+    
+  )
