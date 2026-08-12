@@ -445,7 +445,7 @@ ui <- navbarPage(
                   tags$p(
                     style = "margin:0; text-align:justify;",
                     tags$b("Participantes da Mentoria:"),
-                    "O gráfico apresenta a distribuição dos participantes registados na componente de mentoria de acordo com os filtros seleccionados."
+                    "O gráfico apresenta a distribuição dos participantes que receberam Grants e que estão a receber Mentoria para o desenvolvimento dos seus negócios."
                   )
                 ),
                 
@@ -460,7 +460,7 @@ ui <- navbarPage(
                   tags$p(
                     style = "margin:0; text-align:justify;",
                     tags$b("Participantes com Negócio:"),
-                    "Apresenta a distribuição dos participantes que já possuem ou não possuem um negócio (Tem_Negocio)."
+                    "O gráfico apresenta a distribuição dos participantes de acordo com a posse de um negócio."
                   )
                 ),
                 
@@ -809,7 +809,7 @@ ui <- navbarPage(
                 fluidRow(
                   
                   column(
-                    3,
+                    2,
                     div(
                       style="background:#69C7BE;color:white;padding:15px;border-radius:12px;text-align:center;",
                       h5("Total Participantes"),
@@ -818,7 +818,7 @@ ui <- navbarPage(
                   ),
                   
                   column(
-                    3,
+                    2,
                     div(
                       style="background:#6f42c1;color:white;padding:15px;border-radius:12px;text-align:center;",
                       h5("Mulheres"),
@@ -827,7 +827,7 @@ ui <- navbarPage(
                   ),
                   
                   column(
-                    3,
+                    2,
                     div(
                       style="background:#F77333;color:white;padding:15px;border-radius:12px;text-align:center;",
                       h5("Homens"),
@@ -836,11 +836,29 @@ ui <- navbarPage(
                   ),
                   
                   column(
-                    3,
+                    2,
                     div(
                       style="background:#f9a825;color:white;padding:15px;border-radius:12px;text-align:center;",
-                      h5("Valor Total Vendido (MZN)"),
+                      h5("Total Vendido"),
                       h3(textOutput("valor_total_vendido_feiras"))
+                    )
+                  ),
+                  
+                  column(
+                    2,
+                    div(
+                      style="background:#8054A2;color:white;padding:15px;border-radius:12px;text-align:center;",
+                      h5("Ligações_Mercado"),
+                      h3(textOutput("novos_contactos_feiras"))
+                    )
+                  ),
+                  
+                  column(
+                    2,
+                    div(
+                      style="background:#034EA2;color:white;padding:15px;border-radius:12px;text-align:center;",
+                      h5("Aplicação de Habilidades"),
+                      h3(textOutput("aplicacao_habilidades_feiras"))
                     )
                   )
                   
@@ -4682,6 +4700,7 @@ server <- function(input, output, session){
     })
     
     ###################### FEIRAS NAS COMUNIDADES
+    
     observe({
       
       req(input$filtro_distrito_feiras)
@@ -4749,6 +4768,7 @@ server <- function(input, output, session){
       df
       
     })
+    
     output$total_participantes_feiras <- renderText({
       n_distinct(dados_feiras()$Nome_Participante)
     })
@@ -4781,6 +4801,38 @@ server <- function(input, output, session){
       
       format(total, big.mark = " ", nsmall = 0)
     })
+    
+    
+    output$novos_contactos_feiras <- renderText({
+      
+      Ficha_Monitoria_Feiras %>%
+        filter(
+          toupper(trimws(
+            `Estabeleceu_novos_contactos_ligações_de_mercado?_OUT3_01`
+          )) == "SIM",
+          !is.na(Nome_Participante)
+        ) %>%
+        distinct(Nome_Participante) %>%
+        nrow()
+      
+    })
+    
+    output$aplicacao_habilidades_feiras <- renderText({
+      
+      Ficha_Monitoria_Feiras %>%
+        filter(
+          grepl(
+            "^Sim",
+            `Evidência de aplicação_de habilidades_no_negócio?_OUT1_01`
+          ),
+          !is.na(Nome_Participante)
+        ) %>%
+        distinct(Nome_Participante) %>%
+        nrow()
+      
+    })
+    
+    
     
     output$grafico_feiras_distritos <- renderPlotly({
       
