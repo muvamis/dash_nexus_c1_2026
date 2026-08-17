@@ -201,7 +201,16 @@ ui <- navbarPage(
             # downloadButton("baixarBasePresencasExcel", "Baixar Presenças"),
             withSpinner(plotlyOutput("graficoParticipacaoGlobal", height = "500px")),
             br(), br(),
-       
+            uiOutput("texto_participacao_perfil"),
+            br(),
+            
+            # withSpinner(
+            #   plotlyOutput(
+            #     "graficoParticipacaoPerfil",
+            #     height = "450px"
+            #   )
+            # ),
+            # br(), br(),
             uiOutput("texto_participacao_sexo"),
             br(),
             withSpinner(plotlyOutput("graficoParticipacaoSexo", height = "400px"))
@@ -1087,28 +1096,41 @@ server <- function(input, output, session){
     df <- participantes_ativos() %>%
       count(Sexo) %>%
       mutate(
-        Sexo = factor(Sexo, levels = c("Feminino", "Masculino"))
+        Sexo = factor(Sexo, levels = c("Feminino", "Masculino")),
+        Percentual = n / sum(n) * 100,
+        Texto = paste0(
+          n, " (",
+          round(Percentual, 1),
+          "%)"
+        )
       )
     
     plot_ly(
-      data   = df,
+      data = df,
       labels = ~Sexo,
       values = ~n,
-      type   = "pie",
-      hole   = 0.5,
-      textinfo = "label+percent",
+      type = "pie",
+      hole = 0.5,
+      
+      # Mostrar valor absoluto + percentagem
+      text = ~Texto,
+      textinfo = "text",
+      hoverinfo = "label+text",
+      
       marker = list(
-        colors = c("#9442d4", "#f77333")
+        colors = c(
+          "#9442d4",
+          "#f77333"
+        )
       )
     ) %>%
       layout(
         title = "",
         showlegend = TRUE,
         paper_bgcolor = "#f5f3f4",
-        plot_bgcolor  = "#f5f3f4"
+        plot_bgcolor = "#f5f3f4"
       )
   })
-  
   output$texto_grafico_ativo <- renderUI({
     
     df <- participantes_ativos()
@@ -1156,56 +1178,131 @@ server <- function(input, output, session){
   })
   
   # GRÁFICO DISTRITO – PERCENTUAL GERAL
+  # output$grafico_distrito <- renderPlotly({
+  #   
+  #   df <- participantes_ativos() %>%
+  #     mutate(
+  #       Situacao_Participante = case_when(
+  #         Situacao_Participante %in% c("Deslocado VBG", "VBG Interno") ~ "VBG",
+  #         TRUE ~ Situacao_Participante
+  #       )
+  #     ) %>%
+  #     count(Situacao_Participante, Sexo) %>%
+  #     ungroup() %>%
+  #     mutate(
+  #       total_geral = sum(n),
+  #       perc = round(n / total_geral * 100, 1),
+  #       label = paste0(n, " (", perc, "%)"),
+  #       Sexo = factor(Sexo, levels = c("Feminino", "Masculino"))
+  #     )
+  #   
+  #   plot_ly(
+  #     data = df,
+  #     x = ~Situacao_Participante,
+  #     y = ~n,
+  #     color = ~Sexo,
+  #     colors = c("Feminino" = "#9442d4", "Masculino" = "#f77333"),
+  #     type = "bar",
+  #     text = ~label,
+  #     textposition = "auto",
+  #     textfont = list(size = 14, color = "white"),
+  #     hoverinfo = "text+name",
+  #     hovertext = ~paste0(
+  #       "<b>", Situacao_Participante, "</b><br>",
+  #       "Sexo: ", Sexo, "<br>",
+  #       "Participantes: ", n, "<br>",
+  #       "Percentagem: ", perc, "%"
+  #     )
+  #   ) %>%
+  #     layout(
+  #       barmode = "stack",
+  #       title = "",
+  #       showlegend = TRUE,
+  #       paper_bgcolor = "#f5f3f4",
+  #       plot_bgcolor = "#f5f3f4",
+  #       xaxis = list(title = ""),
+  #       yaxis = list(
+  #         title = "Número de participantes",
+  #         range = c(0, 300)
+  #       )
+  #     )
+  # })
   output$grafico_distrito <- renderPlotly({
     
     df <- participantes_ativos() %>%
       mutate(
         Situacao_Participante = case_when(
-          Situacao_Participante %in% c("Deslocado VBG", "VBG Interno") ~ "VBG",
+          Situacao_Participante %in% c(
+            "Deslocado VBG",
+            "VBG Interno"
+          ) ~ "VBG",
           TRUE ~ Situacao_Participante
         )
       ) %>%
       count(Situacao_Participante, Sexo) %>%
+      group_by(Situacao_Participante) %>%
+      mutate(
+        total_situacao = sum(n),
+        perc = n / total_situacao * 100,
+        label = paste0(
+          n, " (", round(perc, 1), "%)"
+        )
+      ) %>%
       ungroup() %>%
       mutate(
-        total_geral = sum(n),
-        perc = round(n / total_geral * 100, 1),
-        label = paste0(n, " (", perc, "%)"),
-        Sexo = factor(Sexo, levels = c("Feminino", "Masculino"))
+        Sexo = factor(
+          Sexo,
+          levels = c("Feminino", "Masculino")
+        )
       )
     
     plot_ly(
       data = df,
       x = ~Situacao_Participante,
-      y = ~n,
+      y = ~perc,
       color = ~Sexo,
-      colors = c("Feminino" = "#9442d4", "Masculino" = "#f77333"),
+      colors = c(
+        "Feminino" = "#9442d4",
+        "Masculino" = "#f77333"
+      ),
       type = "bar",
+      
+      # Valor absoluto + percentagem
       text = ~label,
       textposition = "auto",
-      textfont = list(size = 14, color = "white"),
-      hoverinfo = "text+name",
+      textfont = list(
+        size = 16,
+        color = "white"
+      ),
+      
+      hoverinfo = "text",
       hovertext = ~paste0(
         "<b>", Situacao_Participante, "</b><br>",
         "Sexo: ", Sexo, "<br>",
         "Participantes: ", n, "<br>",
-        "Percentagem: ", perc, "%"
+        "Percentagem: ", round(perc, 1), "%"
       )
     ) %>%
       layout(
         barmode = "stack",
         title = "",
         showlegend = TRUE,
+        
         paper_bgcolor = "#f5f3f4",
         plot_bgcolor = "#f5f3f4",
-        xaxis = list(title = ""),
+        
+        xaxis = list(
+          title = ""
+        ),
+        
         yaxis = list(
-          title = "Número de participantes",
-          range = c(0, 300)
+          title = "Percentagem",
+          range = c(0, 100),
+          tickvals = seq(0, 100, 20),
+          ticktext = paste0(seq(0, 100, 20), "%")
         )
       )
   })
-  
   # GRÁFICO NEGÓCIO – PERCENTUAL GERAL
   output$grafico_Negocio <- renderPlotly({
     
@@ -1767,6 +1864,374 @@ server <- function(input, output, session){
         "</div>"
       ))
     })
+    
+    
+    # ============================================================
+    # Participação por perfil ao longo das sessões
+    # ============================================================
+    
+    output$graficoParticipacaoPerfil <- renderPlotly({
+      
+      df <- dados_filtrados_presencas()
+      
+      if (nrow(df) == 0) {
+        showNotification(
+          "Nenhum dado disponível para os filtros selecionados.",
+          type = "warning"
+        )
+        return(NULL)
+      }
+      
+      # ============================================================
+      # 1. Sessões
+      # ============================================================
+      
+      sessao_cols <- names(df)[grepl("^Sessão_?\\d+$", names(df))]
+      
+      sessao_cols_ordenadas <- sessao_cols[
+        order(
+          as.numeric(
+            gsub("Sessão_?", "", sessao_cols)
+          )
+        )
+      ]
+      
+      
+      # ============================================================
+      # 2. Criar perfis
+      # ============================================================
+      
+      df <- df %>%
+        mutate(
+          Perfil = case_when(
+            
+            Situacao_Participante == "Deslocado" ~
+              "Pessoas deslocadas",
+            
+            Situacao_Participante == "Familia acolhedora" ~
+              "Famílias acolhedoras",
+            
+            Situacao_Participante %in% c(
+              "Deslocado VBG",
+              "VBG Interno"
+            ) ~
+              "Mulheres sobreviventes de VBG",
+            
+            TRUE ~ NA_character_
+          )
+        ) %>%
+        filter(!is.na(Perfil))
+      
+      
+      # ============================================================
+      # 3. Total previsto por perfil
+      # ============================================================
+      
+      previstos <- df %>%
+        count(
+          Perfil,
+          name = "Previsto"
+        )
+      
+      
+      # ============================================================
+      # 4. Presenças por sessão e perfil
+      # ============================================================
+      
+      df_long <- df %>%
+        tidyr::pivot_longer(
+          cols = all_of(sessao_cols_ordenadas),
+          names_to = "Sessao",
+          values_to = "Presenca"
+        ) %>%
+        
+        filter(
+          Presenca == "Presente"
+        ) %>%
+        
+        count(
+          Sessao,
+          Perfil,
+          name = "Count"
+        ) %>%
+        
+        left_join(
+          previstos,
+          by = "Perfil"
+        ) %>%
+        
+        mutate(
+          
+          # Percentagem de participação
+          Porcentagem = (
+            Count / Previsto
+          ) * 100,
+          
+          # Valor mostrado na barra
+          Label = paste0(
+            round(
+              Porcentagem,
+              1
+            ),
+            "%"
+          ),
+          
+          # Informação do hover
+          Hover = paste0(
+            "<b>",
+            Sessao,
+            "</b><br>",
+            
+            "Perfil: ",
+            Perfil,
+            "<br>",
+            
+            "Participantes presentes: ",
+            Count,
+            "<br>",
+            
+            "Total do perfil: ",
+            Previsto,
+            "<br>",
+            
+            "Participação: ",
+            round(
+              Porcentagem,
+              1
+            ),
+            "%"
+          )
+        )
+      
+      
+      # ============================================================
+      # 5. Completar combinações ausentes
+      # ============================================================
+      
+      df_long <- df_long %>%
+        
+        tidyr::complete(
+          
+          Sessao = sessao_cols_ordenadas,
+          
+          Perfil = c(
+            "Pessoas deslocadas",
+            "Famílias acolhedoras",
+            "Mulheres sobreviventes de VBG"
+          ),
+          
+          fill = list(
+            Count = 0,
+            Porcentagem = 0
+          )
+        ) %>%
+        
+        mutate(
+          
+          # Ordem das sessões
+          Sessao = factor(
+            Sessao,
+            levels = sessao_cols_ordenadas
+          ),
+          
+          # Ordem dos perfis
+          Perfil = factor(
+            Perfil,
+            levels = c(
+              "Pessoas deslocadas",
+              "Famílias acolhedoras",
+              "Mulheres sobreviventes de VBG"
+            )
+          ),
+          
+          # Atualizar label depois do complete
+          Label = paste0(
+            round(
+              Porcentagem,
+              1
+            ),
+            "%"
+          ),
+          
+          # Atualizar hover
+          Hover = paste0(
+            "<b>",
+            Sessao,
+            "</b><br>",
+            
+            "Perfil: ",
+            Perfil,
+            "<br>",
+            
+            "Participantes presentes: ",
+            Count,
+            "<br>",
+            
+            "Participação: ",
+            round(
+              Porcentagem,
+              1
+            ),
+            "%"
+          )
+        )
+      
+      
+      # ============================================================
+      # 6. Cores dos perfis
+      # ============================================================
+      
+      cores_perfil <- c(
+        
+        "Pessoas deslocadas" =
+          "#69C7BE",
+        
+        "Famílias acolhedoras" =
+          "#F77333",
+        
+        "Mulheres sobreviventes de VBG" =
+          "#9942D4"
+      )
+      
+      
+      # ============================================================
+      # 7. Gráfico de barras agrupadas
+      # ============================================================
+      
+      plot_ly(
+        data = df_long,
+        x = ~Sessao,
+        y = ~Porcentagem,
+        color = ~Perfil,
+        colors = cores_perfil,
+        type = "bar",
+        
+        # Valores virados na vertical
+        text = ~Label,
+        textposition = "outside",
+        textangle = -90,
+        
+        textfont = list(
+          size = 18,
+          color = "#000000"
+        ),
+        
+        cliponaxis = FALSE,
+        
+        hovertext = ~Hover,
+        hoverinfo = "text"
+      ) %>%
+        
+        layout(
+          
+          title = "",
+          
+          # Barras lado a lado
+          barmode = "group",
+          
+          
+          # --------------------------------------------------------
+          # Fundo
+          # --------------------------------------------------------
+          
+          paper_bgcolor = "#f5f3f4",
+          
+          plot_bgcolor = "#f5f3f4",
+          
+          
+          # --------------------------------------------------------
+          # Eixo X
+          # --------------------------------------------------------
+          
+          xaxis = list(
+            
+            title = "Sessão",
+            
+            categoryorder = "array",
+            
+            categoryarray = sessao_cols_ordenadas,
+            
+            tickfont = list(
+              size = 12,
+              color = "#000000"
+            )
+          ),
+          
+          
+          # --------------------------------------------------------
+          # Eixo Y
+          # --------------------------------------------------------
+          
+          yaxis = list(
+            
+            title = "Participação (%)",
+            
+            range = c(
+              0,
+              100
+            ),
+            
+            tickvals = seq(
+              0,
+              100,
+              20
+            ),
+            
+            ticktext = paste0(
+              seq(
+                0,
+                100,
+                20
+              ),
+              "%"
+            ),
+            
+            tickfont = list(
+              size = 12,
+              color = "#000000"
+            )
+          ),
+          
+          
+          # --------------------------------------------------------
+          # Legenda
+          # --------------------------------------------------------
+          
+          legend = list(
+            
+            title = list(
+              text = "<b>Perfil</b>"
+            ),
+            
+            orientation = "h",
+            
+            x = 0.5,
+            
+            xanchor = "center",
+            
+            y = -0.18,
+            
+            font = list(
+              size = 16,
+              color = "#000000"
+            )
+          ),
+          
+          
+          # --------------------------------------------------------
+          # Margens
+          # --------------------------------------------------------
+          
+          margin = list(
+            l = 65,
+            r = 30,
+            t = 30,
+            b = 90
+          )
+        )
+    })
+    
+    
     
     ################################ ACOMPANHAMENTO ################################## 
     
