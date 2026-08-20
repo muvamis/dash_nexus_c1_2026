@@ -331,8 +331,6 @@ Presencas_Nexus_Mentoria <- Presencas_Nexus_Mentoria %>%
 Presencas_Nexus_Mentoria <- Presencas_Nexus_Mentoria %>%
   mutate(Facilitadores = str_to_title(Facilitadores))
 
-
-
 Lista_Situacao_Apos_Grants <- read_excel("Lista_Situacao_Apos_Grants.xlsx") %>%
   rename(
     Nome_participante = Nome_participante,
@@ -680,175 +678,180 @@ Ficha_Monitoria_Feiras <- read_excel("Ficha_Monitoria_Feiras.xlsx")
 # BASE DOS GRANTS - NEXUS
 # ============================================================
 
-Nexus_Grants <- tibble(
-  
-  Distrito = c(
-    rep("Nacala Porto",7),
-    rep("Monapo",7)
-  ),
-  
-  
-  Comunidade = c(
-    "ONTUPAIA",
-    "NAHERENQUE",
-    "MURRUPELANE",
-    "MOCONE",
-    "MATHAPUE",
-    "NAUAIA",
-    "TRIANGULO",
-    "MESEREPANE",
-    "MONAPO RIO",
-    "RAMIANE",
-    "MUELEGE",
-    "TOPELANE",
-    "28 DE SETEMBRO",
-    "MICOLENE"
-  ),
-  
-  
-  Total_Receberam_Grant = c(
-    33,27,14,22,43,25,34,
-    30,25,24,21,27,24,26
-  ),
-  
-  
-  Recuperou_Investimento = c(
-    12,8,4,15,4,5,11,
-    3,4,5,6,9,2,2
-  ),
-  
-  
-  Sucesso_Negocio = c(
-    14,10,4,15,20,12,15,
-    18,23,19,21,19,18,15
-  ),
-  
-  
-  Dificuldades_Negocio = c(
-    1,5,0,3,12,4,2,
-    2,4,2,3,0,2,4
-  ),
-  
-  
-  Possiveis_Desistentes = c(
-    6,4,10,2,6,4,6,
-    8,7,3,0,2,3,6
-  )
-  
-)
+Nexus_Grants <- read_excel("Monapo_Participantes_Nexus_Negocios_Grants.xlsx")
 
-Nexus_Grants <- Nexus_Grants %>%
-  
-  mutate(
-    
-    Taxa_Recuperacao = round(
-      Recuperou_Investimento /
-        Total_Receberam_Grant * 100,
-      1
-    ),
-    
-    
-    Taxa_Sucesso = round(
-      Sucesso_Negocio /
-        Total_Receberam_Grant * 100,
-      1
-    ),
-    
-    
-    Taxa_Dificuldade = round(
-      Dificuldades_Negocio /
-        Total_Receberam_Grant * 100,
-      1
-    ),
-    
-    
-    Taxa_Desistencia = round(
-      Possiveis_Desistentes /
-        Total_Receberam_Grant * 100,
-      1
-    )
-    
-  )
+table(Nexus_Grants$`Desistentes pos-grants`)
+
+
+# Nexus_Grants <- tibble(
+#   
+#   Distrito = c(
+#     rep("Nacala Porto",7),
+#     rep("Monapo",7)
+#   ),
+#   
+#   
+#   Comunidade = c(
+#     "ONTUPAIA",
+#     "NAHERENQUE",
+#     "MURRUPELANE",
+#     "MOCONE",
+#     "MATHAPUE",
+#     "NAUAIA",
+#     "TRIANGULO",
+#     "MESEREPANE",
+#     "MONAPO RIO",
+#     "RAMIANE",
+#     "MUELEGE",
+#     "TOPELANE",
+#     "28 DE SETEMBRO",
+#     "MICOLENE"
+#   ),
+#   
+#   
+#   Total_Receberam_Grant = c(
+#     33,27,14,22,43,25,34,
+#     30,25,24,21,27,24,26
+#   ),
+#   
+#   
+#   Recuperou_Investimento = c(
+#     12,8,4,15,4,5,11,
+#     3,4,5,6,9,2,2
+#   ),
+#   
+#   
+#   Sucesso_Negocio = c(
+#     14,10,4,15,20,12,15,
+#     18,23,19,21,19,18,15
+#   ),
+#   
+#   
+#   Dificuldades_Negocio = c(
+#     1,5,0,3,12,4,2,
+#     2,4,2,3,0,2,4
+#   ),
+#   
+#   
+#   Possiveis_Desistentes = c(
+#     6,4,10,2,6,4,6,
+#     8,7,3,0,2,3,6
+#   )
+#   
+# )
+# 
+# Nexus_Grants <- Nexus_Grants %>%
+#   
+#   mutate(
+#     
+#     Taxa_Recuperacao = round(
+#       Recuperou_Investimento /
+#         Total_Receberam_Grant * 100,
+#       1
+#     ),
+#     
+#     
+#     Taxa_Sucesso = round(
+#       Sucesso_Negocio /
+#         Total_Receberam_Grant * 100,
+#       1
+#     ),
+#     
+#     
+#     Taxa_Dificuldade = round(
+#       Dificuldades_Negocio /
+#         Total_Receberam_Grant * 100,
+#       1
+#     ),
+#     
+#     
+#     Taxa_Desistencia = round(
+#       Possiveis_Desistentes /
+#         Total_Receberam_Grant * 100,
+#       1
+#     )
+#     
+#   )
 
 ###################################### REFLEXÃO
 
-table(Presencas_Nexus$Situacao_Participante)
-library(dplyr)
-library(ggplot2)
-library(ggthemes)
-
-# ============================================================
-# Distrito x Sexo - número e percentagem
-# ============================================================
-
-dados_distrito_sexo <- Perfil_NEXUS_GERAL %>%
-  count(Distrito, Sexo) %>%
-  group_by(Distrito) %>%
-  mutate(
-    Percentual = n / sum(n) * 100,
-    Label = paste0(n, " (", round(Percentual, 1), "%)")
-  ) %>%
-  ungroup()
-
-# ============================================================
-# Gráfico empilhado - Percentagem
-# ============================================================
-
-ggplot(
-  dados_distrito_sexo,
-  aes(
-    x = Distrito,
-    y = Percentual,
-    fill = Sexo
-  )
-) +
-  
-  geom_col(
-    position = "stack",
-    width = 0.65
-  ) +
-  
-  geom_text(
-    aes(label = Label),
-    position = position_stack(vjust = 0.5),
-    color = "white",
-    fontface = "bold",
-    size = 7
-  ) +
-  
-  scale_y_continuous(
-    limits = c(0, 100),
-    breaks = seq(0, 100, 20),
-    labels = function(x) paste0(x, "%")
-  ) +
-  
-  scale_fill_manual(
-    values = c(
-      "Feminino" = "#9942D4",
-      "Masculino" = "#F77333"
-    )
-  ) +
-  
-  labs(
-    title = "Participantes selecionados por distrito",
-    subtitle = "",
-    x = "Distrito",
-    y = "Percentagem",
-    fill = "Sexo"
-  ) +
-  
-  theme_stata(base_size = 14) +
-  
-  theme(
-    plot.title = element_text(
-      face = "bold",
-      size = 18
-    ),
-    plot.subtitle = element_text(
-      size = 14
-    ),
-    legend.position = "bottom"
-  )
+# table(Presencas_Nexus$Situacao_Participante)
+# library(dplyr)
+# library(ggplot2)
+# library(ggthemes)
+# 
+# # ============================================================
+# # Distrito x Sexo - número e percentagem
+# # ============================================================
+# 
+# dados_distrito_sexo <- Perfil_NEXUS_GERAL %>%
+#   count(Distrito, Sexo) %>%
+#   group_by(Distrito) %>%
+#   mutate(
+#     Percentual = n / sum(n) * 100,
+#     Label = paste0(n, " (", round(Percentual, 1), "%)")
+#   ) %>%
+#   ungroup()
+# 
+# # ============================================================
+# # Gráfico empilhado - Percentagem
+# # ============================================================
+# 
+# ggplot(
+#   dados_distrito_sexo,
+#   aes(
+#     x = Distrito,
+#     y = Percentual,
+#     fill = Sexo
+#   )
+# ) +
+#   
+#   geom_col(
+#     position = "stack",
+#     width = 0.65
+#   ) +
+#   
+#   geom_text(
+#     aes(label = Label),
+#     position = position_stack(vjust = 0.5),
+#     color = "white",
+#     fontface = "bold",
+#     size = 7
+#   ) +
+#   
+#   scale_y_continuous(
+#     limits = c(0, 100),
+#     breaks = seq(0, 100, 20),
+#     labels = function(x) paste0(x, "%")
+#   ) +
+#   
+#   scale_fill_manual(
+#     values = c(
+#       "Feminino" = "#9942D4",
+#       "Masculino" = "#F77333"
+#     )
+#   ) +
+#   
+#   labs(
+#     title = "Participantes selecionados por distrito",
+#     subtitle = "",
+#     x = "Distrito",
+#     y = "Percentagem",
+#     fill = "Sexo"
+#   ) +
+#   
+#   theme_stata(base_size = 14) +
+#   
+#   theme(
+#     plot.title = element_text(
+#       face = "bold",
+#       size = 18
+#     ),
+#     plot.subtitle = element_text(
+#       size = 14
+#     ),
+#     legend.position = "bottom"
+#   )
 
 # 
 # # ============================================================
@@ -1062,813 +1065,813 @@ ggplot(
 # 3 GRÁFICOS SEPARADOS
 # FEMININO E MASCULINO LADO A LADO
 # ============================================================
-
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-
-
-# ============================================================
-# 1. DADOS
-# ============================================================
-
-df <- Presencas_Nexus
-
-
-# ============================================================
-# 2. IDENTIFICAR E ORDENAR AS SESSÕES
-# ============================================================
-
-sessao_cols <- names(df)[
-  grepl("^Sessão_?\\d+$", names(df))
-]
-
-sessao_cols_ordenadas <- sessao_cols[
-  order(
-    as.numeric(
-      gsub("Sessão_?", "", sessao_cols)
-    )
-  )
-]
-
-print(sessao_cols_ordenadas)
-
-
-# ============================================================
-# 3. PADRONIZAR SEXO
-# ============================================================
-
-df <- df %>%
-  mutate(
-    
-    Sexo = case_when(
-      
-      trimws(as.character(Sexo)) %in% c(
-        "Feminino",
-        "F",
-        "Female",
-        "FEMALE"
-      ) ~ "Feminino",
-      
-      trimws(as.character(Sexo)) %in% c(
-        "Masculino",
-        "M",
-        "Male",
-        "MALE"
-      ) ~ "Masculino",
-      
-      TRUE ~ NA_character_
-    )
-  )
-
-
-# ============================================================
-# 4. CRIAR OS PERFIS
-# ============================================================
-
-df <- df %>%
-  mutate(
-    
-    Perfil = case_when(
-      
-      Situacao_Participante == "Deslocado" ~
-        "Pessoas deslocadas",
-      
-      Situacao_Participante == "Familia acolhedora" ~
-        "Famílias acolhedoras",
-      
-      Situacao_Participante %in% c(
-        "Deslocado VBG",
-        "VBG Interno"
-      ) ~
-        "Sobreviventes de VBG",
-      
-      TRUE ~ NA_character_
-    )
-  ) %>%
-  
-  filter(
-    !is.na(Perfil),
-    !is.na(Sexo)
-  )
-
-
-# ============================================================
-# 5. UNIVERSO POR PERFIL E SEXO
-# ============================================================
-
-universo <- df %>%
-  
-  count(
-    Perfil,
-    Sexo,
-    name = "Previsto"
-  )
-
-
-# ============================================================
-# 6. PRESENÇAS POR SESSÃO
-# ============================================================
-
-presencas <- df %>%
-  
-  pivot_longer(
-    
-    cols = all_of(
-      sessao_cols_ordenadas
-    ),
-    
-    names_to = "Sessao",
-    
-    values_to = "Presenca"
-  ) %>%
-  
-  filter(
-    Presenca == "Presente"
-  ) %>%
-  
-  count(
-    Sessao,
-    Perfil,
-    Sexo,
-    name = "Presentes"
-  )
-
-
-# ============================================================
-# 7. CRIAR TODAS AS COMBINAÇÕES
-# ============================================================
-
-combinacoes <- expand_grid(
-  
-  Sessao = sessao_cols_ordenadas,
-  
-  Perfil = c(
-    "Pessoas deslocadas",
-    "Famílias acolhedoras",
-    "Sobreviventes de VBG"
-  ),
-  
-  Sexo = c(
-    "Feminino",
-    "Masculino"
-  )
-)
-
-
-# ============================================================
-# 8. JUNTAR UNIVERSO + PRESENÇAS
-# ============================================================
-
-df_long <- combinacoes %>%
-  
-  left_join(
-    universo,
-    by = c(
-      "Perfil",
-      "Sexo"
-    )
-  ) %>%
-  
-  left_join(
-    presencas,
-    by = c(
-      "Sessao",
-      "Perfil",
-      "Sexo"
-    )
-  ) %>%
-  
-  mutate(
-    
-    Previsto = coalesce(
-      Previsto,
-      0
-    ),
-    
-    Presentes = coalesce(
-      Presentes,
-      0
-    ),
-    
-    Porcentagem = case_when(
-      
-      Previsto > 0 ~
-        Presentes / Previsto * 100,
-      
-      TRUE ~ 0
-    )
-  )
-
-
-# ============================================================
-# 9. ORGANIZAR FATORES
-# ============================================================
-
-df_long <- df_long %>%
-  
-  mutate(
-    
-    Sessao = factor(
-      Sessao,
-      levels = sessao_cols_ordenadas
-    ),
-    
-    Perfil = factor(
-      Perfil,
-      levels = c(
-        "Pessoas deslocadas",
-        "Famílias acolhedoras",
-        "Sobreviventes de VBG"
-      )
-    ),
-    
-    Sexo = factor(
-      Sexo,
-      levels = c(
-        "Feminino",
-        "Masculino"
-      )
-    ),
-    
-    Label = ifelse(
-      
-      Porcentagem > 0,
-      
-      paste0(
-        round(
-          Porcentagem,
-          1
-        ),
-        "%"
-      ),
-      
-      ""
-    )
-  )
-
-
-# ============================================================
-# 10. VERIFICAR UNIVERSO
-# ============================================================
-
-print(
-  universo %>%
-    arrange(
-      Perfil,
-      Sexo
-    )
-)
-
-
-# ============================================================
-# 11. CORES
-# ============================================================
-
-cores_sexo <- c(
-  
-  "Feminino" = "#9942D4",
-  
-  "Masculino" = "#F77333"
-)
-
-
-# ============================================================
-# 12. FUNÇÃO PARA CRIAR GRÁFICO
-# ============================================================
-
-criar_grafico_perfil <- function(
-    perfil_nome
-) {
-  
-  
-  dados <- df_long %>%
-    filter(
-      Perfil == perfil_nome
-    )
-  
-  
-  ggplot(
-    
-    dados,
-    
-    aes(
-      x = Sessao,
-      y = Porcentagem,
-      fill = Sexo
-    )
-  ) +
-    
-    
-    # ========================================================
-  # BARRAS LADO A LADO
-  # ========================================================
-  
-  geom_col(
-    
-    position = position_dodge(
-      width = 0.8
-    ),
-    
-    width = 0.7
-  ) +
-    
-    
-    # ========================================================
-  # PERCENTAGEM NO CENTRO DAS BARRAS
-  # ========================================================
-  
-  geom_text(
-    
-    aes(
-      label = Label
-    ),
-    
-    position = position_dodge(
-      width = 0.8
-    ),
-    
-    vjust = 0.1,
-    
-    size = 5,
-    
-    colour = "black",
-    
-    fontface = "bold"
-  ) +
-    
-    
-    # ========================================================
-  # CORES
-  # ========================================================
-  
-  scale_fill_manual(
-    
-    values = cores_sexo
-  ) +
-    
-    
-    # ========================================================
-  # EIXO Y
-  # ========================================================
-  
-  scale_y_continuous(
-    
-    limits = c(
-      0,
-      100
-    ),
-    
-    breaks = seq(
-      0,
-      100,
-      20
-    ),
-    
-    labels = function(x) {
-      
-      paste0(
-        x,
-        "%"
-      )
-      
-    },
-    
-    expand = expansion(
-      mult = c(
-        0,
-        0.02
-      )
-    )
-  ) +
-    
-    
-    # ========================================================
-  # TÍTULOS
-  # ========================================================
-  
-  labs(
-    
-    title = perfil_nome,
-    
-    x = "Sessão",
-    
-    y = "Participação (%)",
-    
-    fill = "Sexo"
-  ) +
-    
-    
-    # ========================================================
-  # TEMA
-  # ========================================================
-  
-  theme_minimal() +
-    
-    theme(
-      
-      plot.background = element_rect(
-        fill = "#f5f3f4",
-        colour = NA
-      ),
-      
-      panel.background = element_rect(
-        fill = "#f5f3f4",
-        colour = NA
-      ),
-      
-      panel.grid.major.x = element_blank(),
-      
-      panel.grid.minor.x = element_blank(),
-      
-      axis.text.x = element_text(
-        size = 14,
-        colour = "black"
-      ),
-      
-      axis.text.y = element_text(
-        size = 12,
-        colour = "black"
-      ),
-      
-      axis.title.x = element_text(
-        size = 13,
-        colour = "black"
-      ),
-      
-      axis.title.y = element_text(
-        size = 13,
-        colour = "black"
-      ),
-      
-      plot.title = element_text(
-        size = 16,
-        face = "bold",
-        hjust = 0.5
-      ),
-      
-      legend.position = "bottom",
-      
-      legend.title = element_text(
-        size = 14,
-        face = "bold"
-      ),
-      
-      legend.text = element_text(
-        size = 14
-      )
-    )
-}
-
-
-# ============================================================
-# 13. CRIAR OS 3 GRÁFICOS
-# ============================================================
-
-grafico_deslocados <- criar_grafico_perfil(
-  "Pessoas deslocadas"
-)
-
-grafico_familias <- criar_grafico_perfil(
-  "Famílias acolhedoras"
-)
-
-grafico_vbg <- criar_grafico_perfil(
-  "Sobreviventes de VBG"
-)
-
-
-# ============================================================
-# 14. MOSTRAR OS 3 GRÁFICOS
-# ============================================================
-
-grafico_deslocados
-
-grafico_familias
-
-grafico_vbg
-
-# ============================================================
-# 1. Usar os dados diretamente
-# ============================================================
-
-df <- Presencas_Nexus
-
-
-# ============================================================
-# 2. Sessões
-# ============================================================
-
-sessao_cols <- names(df)[
-  grepl("^Sessão_?\\d+$", names(df))
-]
-
-sessao_cols_ordenadas <- sessao_cols[
-  order(
-    as.numeric(
-      gsub("Sessão_?", "", sessao_cols)
-    )
-  )
-]
-
-
-# ============================================================
-# 3. Criar perfis
-# ============================================================
-
-df <- df %>%
-  mutate(
-    Perfil = case_when(
-      
-      Situacao_Participante == "Deslocado" ~
-        "Pessoas deslocadas",
-      
-      Situacao_Participante == "Familia acolhedora" ~
-        "Famílias acolhedoras",
-      
-      Situacao_Participante %in% c(
-        "Deslocado VBG",
-        "VBG Interno"
-      ) ~
-        "Mulheres sobreviventes de VBG",
-      
-      TRUE ~ NA_character_
-    )
-  ) %>%
-  filter(
-    !is.na(Perfil)
-  )
-
-
-# ============================================================
-# 4. Total previsto por perfil
-# ============================================================
-
-previstos <- df %>%
-  count(
-    Perfil,
-    name = "Previsto"
-  )
-
-
-# ============================================================
-# 5. Transformar sessões para formato longo
-# ============================================================
-
-df_long <- df %>%
-  
-  tidyr::pivot_longer(
-    cols = all_of(
-      sessao_cols_ordenadas
-    ),
-    
-    names_to = "Sessao",
-    
-    values_to = "Presenca"
-  ) %>%
-  
-  filter(
-    Presenca == "Presente"
-  ) %>%
-  
-  count(
-    Sessao,
-    Perfil,
-    name = "Count"
-  ) %>%
-  
-  left_join(
-    previstos,
-    by = "Perfil"
-  ) %>%
-  
-  mutate(
-    Porcentagem =
-      Count / Previsto * 100
-  )
-
-
-# ============================================================
-# 6. Completar combinações
-# ============================================================
-
-df_long <- df_long %>%
-  
-  tidyr::complete(
-    
-    Sessao = sessao_cols_ordenadas,
-    
-    Perfil = c(
-      "Pessoas deslocadas",
-      "Famílias acolhedoras",
-      "Mulheres sobreviventes de VBG"
-    ),
-    
-    fill = list(
-      Count = 0,
-      Porcentagem = 0
-    )
-  ) %>%
-  
-  mutate(
-    
-    Sessao = factor(
-      Sessao,
-      levels = sessao_cols_ordenadas
-    ),
-    
-    Perfil = factor(
-      Perfil,
-      levels = c(
-        "Pessoas deslocadas",
-        "Famílias acolhedoras",
-        "Mulheres sobreviventes de VBG"
-      )
-    ),
-    
-    Label = paste0(
-      round(
-        Porcentagem,
-        1
-      ),
-      "%"
-    )
-  )
-
-
-# ============================================================
-# 7. Cores
-# ============================================================
-
-cores_perfil <- c(
-  
-  "Pessoas deslocadas" =
-    "#69C7BE",
-  
-  "Famílias acolhedoras" =
-    "#ffc107",
-  
-  "Mulheres sobreviventes de VBG" =
-    "#9942D4"
-)
-
-
-# ============================================================
-# 8. Gráfico
-# ============================================================
-
-ggplot(
-  
-  df_long,
-  
-  aes(
-    x = Sessao,
-    y = Porcentagem,
-    fill = Perfil
-  )
-) +
-  
-  
-  # ==========================================================
-# Barras
-# ==========================================================
-
-geom_col(
-  
-  position = position_dodge(
-    width = 0.8
-  ),
-  
-  width = 0.7
-) +
-  
-  
-  # ==========================================================
-# PERCENTAGENS NO TOPO DAS BARRAS
-# ==========================================================
-
-geom_text(
-  
-  aes(
-    label = Label
-  ),
-  
-  position = position_dodge(
-    width = 0.8
-  ),
-  
-  vjust = -0.3,
-  
-  angle = 90,
-  
-  size = 6,
-  
-  colour = "black",
-  
-  fontface = "bold"
-) +
-  
-  
-  # ==========================================================
-# Cores
-# ==========================================================
-
-scale_fill_manual(
-  values = cores_perfil
-) +
-  
-  
-  # ==========================================================
-# Eixo Y
-# ==========================================================
-
-scale_y_continuous(
-  
-  limits = c(
-    0,
-    100
-  ),
-  
-  breaks = seq(
-    0,
-    100,
-    20
-  ),
-  
-  labels = function(x) {
-    paste0(
-      x,
-      "%"
-    )
-  },
-  
-  expand = expansion(
-    mult = c(
-      0,
-      0.12
-    )
-  )
-) +
-  
-  
-  # ==========================================================
-# Títulos
-# ==========================================================
-
-labs(
-  
-  x = "Sessão",
-  
-  y = "Participação (%)",
-  
-  fill = "Perfil"
-) +
-  
-  
-  # ==========================================================
-# Tema
-# ==========================================================
-
-theme_minimal() +
-  
-  theme(
-    
-    plot.background = element_rect(
-      fill = "#f5f3f4",
-      colour = NA
-    ),
-    
-    panel.background = element_rect(
-      fill = "#f5f3f4",
-      colour = NA
-    ),
-    
-    panel.grid.major.x = element_blank(),
-    
-    panel.grid.minor.x = element_blank(),
-    
-    axis.text.x = element_text(
-      size = 14,
-      colour = "black"
-    ),
-    
-    axis.text.y = element_text(
-      size = 12,
-      colour = "black"
-    ),
-    
-    axis.title = element_text(
-      size = 13
-    ),
-    
-    legend.position = "bottom",
-    
-    legend.title = element_text(
-      size = 13,
-      face = "bold"
-    ),
-    
-    legend.text = element_text(
-      size = 12
-    )
-  )
+# 
+# library(dplyr)
+# library(tidyr)
+# library(ggplot2)
+# 
+# 
+# # ============================================================
+# # 1. DADOS
+# # ============================================================
+# 
+# df <- Presencas_Nexus
+# 
+# 
+# # ============================================================
+# # 2. IDENTIFICAR E ORDENAR AS SESSÕES
+# # ============================================================
+# 
+# sessao_cols <- names(df)[
+#   grepl("^Sessão_?\\d+$", names(df))
+# ]
+# 
+# sessao_cols_ordenadas <- sessao_cols[
+#   order(
+#     as.numeric(
+#       gsub("Sessão_?", "", sessao_cols)
+#     )
+#   )
+# ]
+# 
+# print(sessao_cols_ordenadas)
+# 
+# 
+# # ============================================================
+# # 3. PADRONIZAR SEXO
+# # ============================================================
+# 
+# df <- df %>%
+#   mutate(
+#     
+#     Sexo = case_when(
+#       
+#       trimws(as.character(Sexo)) %in% c(
+#         "Feminino",
+#         "F",
+#         "Female",
+#         "FEMALE"
+#       ) ~ "Feminino",
+#       
+#       trimws(as.character(Sexo)) %in% c(
+#         "Masculino",
+#         "M",
+#         "Male",
+#         "MALE"
+#       ) ~ "Masculino",
+#       
+#       TRUE ~ NA_character_
+#     )
+#   )
+# 
+# 
+# # ============================================================
+# # 4. CRIAR OS PERFIS
+# # ============================================================
+# 
+# df <- df %>%
+#   mutate(
+#     
+#     Perfil = case_when(
+#       
+#       Situacao_Participante == "Deslocado" ~
+#         "Pessoas deslocadas",
+#       
+#       Situacao_Participante == "Familia acolhedora" ~
+#         "Famílias acolhedoras",
+#       
+#       Situacao_Participante %in% c(
+#         "Deslocado VBG",
+#         "VBG Interno"
+#       ) ~
+#         "Sobreviventes de VBG",
+#       
+#       TRUE ~ NA_character_
+#     )
+#   ) %>%
+#   
+#   filter(
+#     !is.na(Perfil),
+#     !is.na(Sexo)
+#   )
+# 
+# 
+# # ============================================================
+# # 5. UNIVERSO POR PERFIL E SEXO
+# # ============================================================
+# 
+# universo <- df %>%
+#   
+#   count(
+#     Perfil,
+#     Sexo,
+#     name = "Previsto"
+#   )
+# 
+# 
+# # ============================================================
+# # 6. PRESENÇAS POR SESSÃO
+# # ============================================================
+# 
+# presencas <- df %>%
+#   
+#   pivot_longer(
+#     
+#     cols = all_of(
+#       sessao_cols_ordenadas
+#     ),
+#     
+#     names_to = "Sessao",
+#     
+#     values_to = "Presenca"
+#   ) %>%
+#   
+#   filter(
+#     Presenca == "Presente"
+#   ) %>%
+#   
+#   count(
+#     Sessao,
+#     Perfil,
+#     Sexo,
+#     name = "Presentes"
+#   )
+# 
+# 
+# # ============================================================
+# # 7. CRIAR TODAS AS COMBINAÇÕES
+# # ============================================================
+# 
+# combinacoes <- expand_grid(
+#   
+#   Sessao = sessao_cols_ordenadas,
+#   
+#   Perfil = c(
+#     "Pessoas deslocadas",
+#     "Famílias acolhedoras",
+#     "Sobreviventes de VBG"
+#   ),
+#   
+#   Sexo = c(
+#     "Feminino",
+#     "Masculino"
+#   )
+# )
+# 
+# 
+# # ============================================================
+# # 8. JUNTAR UNIVERSO + PRESENÇAS
+# # ============================================================
+# 
+# df_long <- combinacoes %>%
+#   
+#   left_join(
+#     universo,
+#     by = c(
+#       "Perfil",
+#       "Sexo"
+#     )
+#   ) %>%
+#   
+#   left_join(
+#     presencas,
+#     by = c(
+#       "Sessao",
+#       "Perfil",
+#       "Sexo"
+#     )
+#   ) %>%
+#   
+#   mutate(
+#     
+#     Previsto = coalesce(
+#       Previsto,
+#       0
+#     ),
+#     
+#     Presentes = coalesce(
+#       Presentes,
+#       0
+#     ),
+#     
+#     Porcentagem = case_when(
+#       
+#       Previsto > 0 ~
+#         Presentes / Previsto * 100,
+#       
+#       TRUE ~ 0
+#     )
+#   )
+# 
+# 
+# # ============================================================
+# # 9. ORGANIZAR FATORES
+# # ============================================================
+# 
+# df_long <- df_long %>%
+#   
+#   mutate(
+#     
+#     Sessao = factor(
+#       Sessao,
+#       levels = sessao_cols_ordenadas
+#     ),
+#     
+#     Perfil = factor(
+#       Perfil,
+#       levels = c(
+#         "Pessoas deslocadas",
+#         "Famílias acolhedoras",
+#         "Sobreviventes de VBG"
+#       )
+#     ),
+#     
+#     Sexo = factor(
+#       Sexo,
+#       levels = c(
+#         "Feminino",
+#         "Masculino"
+#       )
+#     ),
+#     
+#     Label = ifelse(
+#       
+#       Porcentagem > 0,
+#       
+#       paste0(
+#         round(
+#           Porcentagem,
+#           1
+#         ),
+#         "%"
+#       ),
+#       
+#       ""
+#     )
+#   )
+# 
+# 
+# # ============================================================
+# # 10. VERIFICAR UNIVERSO
+# # ============================================================
+# 
+# print(
+#   universo %>%
+#     arrange(
+#       Perfil,
+#       Sexo
+#     )
+# )
+# 
+# 
+# # ============================================================
+# # 11. CORES
+# # ============================================================
+# 
+# cores_sexo <- c(
+#   
+#   "Feminino" = "#9942D4",
+#   
+#   "Masculino" = "#F77333"
+# )
+# 
+# 
+# # ============================================================
+# # 12. FUNÇÃO PARA CRIAR GRÁFICO
+# # ============================================================
+# 
+# criar_grafico_perfil <- function(
+#     perfil_nome
+# ) {
+#   
+#   
+#   dados <- df_long %>%
+#     filter(
+#       Perfil == perfil_nome
+#     )
+#   
+#   
+#   ggplot(
+#     
+#     dados,
+#     
+#     aes(
+#       x = Sessao,
+#       y = Porcentagem,
+#       fill = Sexo
+#     )
+#   ) +
+#     
+#     
+#     # ========================================================
+#   # BARRAS LADO A LADO
+#   # ========================================================
+#   
+#   geom_col(
+#     
+#     position = position_dodge(
+#       width = 0.8
+#     ),
+#     
+#     width = 0.7
+#   ) +
+#     
+#     
+#     # ========================================================
+#   # PERCENTAGEM NO CENTRO DAS BARRAS
+#   # ========================================================
+#   
+#   geom_text(
+#     
+#     aes(
+#       label = Label
+#     ),
+#     
+#     position = position_dodge(
+#       width = 0.8
+#     ),
+#     
+#     vjust = 0.1,
+#     
+#     size = 5,
+#     
+#     colour = "black",
+#     
+#     fontface = "bold"
+#   ) +
+#     
+#     
+#     # ========================================================
+#   # CORES
+#   # ========================================================
+#   
+#   scale_fill_manual(
+#     
+#     values = cores_sexo
+#   ) +
+#     
+#     
+#     # ========================================================
+#   # EIXO Y
+#   # ========================================================
+#   
+#   scale_y_continuous(
+#     
+#     limits = c(
+#       0,
+#       100
+#     ),
+#     
+#     breaks = seq(
+#       0,
+#       100,
+#       20
+#     ),
+#     
+#     labels = function(x) {
+#       
+#       paste0(
+#         x,
+#         "%"
+#       )
+#       
+#     },
+#     
+#     expand = expansion(
+#       mult = c(
+#         0,
+#         0.02
+#       )
+#     )
+#   ) +
+#     
+#     
+#     # ========================================================
+#   # TÍTULOS
+#   # ========================================================
+#   
+#   labs(
+#     
+#     title = perfil_nome,
+#     
+#     x = "Sessão",
+#     
+#     y = "Participação (%)",
+#     
+#     fill = "Sexo"
+#   ) +
+#     
+#     
+#     # ========================================================
+#   # TEMA
+#   # ========================================================
+#   
+#   theme_minimal() +
+#     
+#     theme(
+#       
+#       plot.background = element_rect(
+#         fill = "#f5f3f4",
+#         colour = NA
+#       ),
+#       
+#       panel.background = element_rect(
+#         fill = "#f5f3f4",
+#         colour = NA
+#       ),
+#       
+#       panel.grid.major.x = element_blank(),
+#       
+#       panel.grid.minor.x = element_blank(),
+#       
+#       axis.text.x = element_text(
+#         size = 14,
+#         colour = "black"
+#       ),
+#       
+#       axis.text.y = element_text(
+#         size = 12,
+#         colour = "black"
+#       ),
+#       
+#       axis.title.x = element_text(
+#         size = 13,
+#         colour = "black"
+#       ),
+#       
+#       axis.title.y = element_text(
+#         size = 13,
+#         colour = "black"
+#       ),
+#       
+#       plot.title = element_text(
+#         size = 16,
+#         face = "bold",
+#         hjust = 0.5
+#       ),
+#       
+#       legend.position = "bottom",
+#       
+#       legend.title = element_text(
+#         size = 14,
+#         face = "bold"
+#       ),
+#       
+#       legend.text = element_text(
+#         size = 14
+#       )
+#     )
+# }
+# 
+# 
+# # ============================================================
+# # 13. CRIAR OS 3 GRÁFICOS
+# # ============================================================
+# 
+# grafico_deslocados <- criar_grafico_perfil(
+#   "Pessoas deslocadas"
+# )
+# 
+# grafico_familias <- criar_grafico_perfil(
+#   "Famílias acolhedoras"
+# )
+# 
+# grafico_vbg <- criar_grafico_perfil(
+#   "Sobreviventes de VBG"
+# )
+# 
+# 
+# # ============================================================
+# # 14. MOSTRAR OS 3 GRÁFICOS
+# # ============================================================
+# 
+# grafico_deslocados
+# 
+# grafico_familias
+# 
+# grafico_vbg
+# 
+# # ============================================================
+# # 1. Usar os dados diretamente
+# # ============================================================
+# 
+# df <- Presencas_Nexus
+# 
+# 
+# # ============================================================
+# # 2. Sessões
+# # ============================================================
+# 
+# sessao_cols <- names(df)[
+#   grepl("^Sessão_?\\d+$", names(df))
+# ]
+# 
+# sessao_cols_ordenadas <- sessao_cols[
+#   order(
+#     as.numeric(
+#       gsub("Sessão_?", "", sessao_cols)
+#     )
+#   )
+# ]
+# 
+# 
+# # ============================================================
+# # 3. Criar perfis
+# # ============================================================
+# 
+# df <- df %>%
+#   mutate(
+#     Perfil = case_when(
+#       
+#       Situacao_Participante == "Deslocado" ~
+#         "Pessoas deslocadas",
+#       
+#       Situacao_Participante == "Familia acolhedora" ~
+#         "Famílias acolhedoras",
+#       
+#       Situacao_Participante %in% c(
+#         "Deslocado VBG",
+#         "VBG Interno"
+#       ) ~
+#         "Mulheres sobreviventes de VBG",
+#       
+#       TRUE ~ NA_character_
+#     )
+#   ) %>%
+#   filter(
+#     !is.na(Perfil)
+#   )
+# 
+# 
+# # ============================================================
+# # 4. Total previsto por perfil
+# # ============================================================
+# 
+# previstos <- df %>%
+#   count(
+#     Perfil,
+#     name = "Previsto"
+#   )
+# 
+# 
+# # ============================================================
+# # 5. Transformar sessões para formato longo
+# # ============================================================
+# 
+# df_long <- df %>%
+#   
+#   tidyr::pivot_longer(
+#     cols = all_of(
+#       sessao_cols_ordenadas
+#     ),
+#     
+#     names_to = "Sessao",
+#     
+#     values_to = "Presenca"
+#   ) %>%
+#   
+#   filter(
+#     Presenca == "Presente"
+#   ) %>%
+#   
+#   count(
+#     Sessao,
+#     Perfil,
+#     name = "Count"
+#   ) %>%
+#   
+#   left_join(
+#     previstos,
+#     by = "Perfil"
+#   ) %>%
+#   
+#   mutate(
+#     Porcentagem =
+#       Count / Previsto * 100
+#   )
+# 
+# 
+# # ============================================================
+# # 6. Completar combinações
+# # ============================================================
+# 
+# df_long <- df_long %>%
+#   
+#   tidyr::complete(
+#     
+#     Sessao = sessao_cols_ordenadas,
+#     
+#     Perfil = c(
+#       "Pessoas deslocadas",
+#       "Famílias acolhedoras",
+#       "Mulheres sobreviventes de VBG"
+#     ),
+#     
+#     fill = list(
+#       Count = 0,
+#       Porcentagem = 0
+#     )
+#   ) %>%
+#   
+#   mutate(
+#     
+#     Sessao = factor(
+#       Sessao,
+#       levels = sessao_cols_ordenadas
+#     ),
+#     
+#     Perfil = factor(
+#       Perfil,
+#       levels = c(
+#         "Pessoas deslocadas",
+#         "Famílias acolhedoras",
+#         "Mulheres sobreviventes de VBG"
+#       )
+#     ),
+#     
+#     Label = paste0(
+#       round(
+#         Porcentagem,
+#         1
+#       ),
+#       "%"
+#     )
+#   )
+# 
+# 
+# # ============================================================
+# # 7. Cores
+# # ============================================================
+# 
+# cores_perfil <- c(
+#   
+#   "Pessoas deslocadas" =
+#     "#69C7BE",
+#   
+#   "Famílias acolhedoras" =
+#     "#ffc107",
+#   
+#   "Mulheres sobreviventes de VBG" =
+#     "#9942D4"
+# )
+# 
+# 
+# # ============================================================
+# # 8. Gráfico
+# # ============================================================
+# 
+# ggplot(
+#   
+#   df_long,
+#   
+#   aes(
+#     x = Sessao,
+#     y = Porcentagem,
+#     fill = Perfil
+#   )
+# ) +
+#   
+#   
+#   # ==========================================================
+# # Barras
+# # ==========================================================
+# 
+# geom_col(
+#   
+#   position = position_dodge(
+#     width = 0.8
+#   ),
+#   
+#   width = 0.7
+# ) +
+#   
+#   
+#   # ==========================================================
+# # PERCENTAGENS NO TOPO DAS BARRAS
+# # ==========================================================
+# 
+# geom_text(
+#   
+#   aes(
+#     label = Label
+#   ),
+#   
+#   position = position_dodge(
+#     width = 0.8
+#   ),
+#   
+#   vjust = -0.3,
+#   
+#   angle = 90,
+#   
+#   size = 6,
+#   
+#   colour = "black",
+#   
+#   fontface = "bold"
+# ) +
+#   
+#   
+#   # ==========================================================
+# # Cores
+# # ==========================================================
+# 
+# scale_fill_manual(
+#   values = cores_perfil
+# ) +
+#   
+#   
+#   # ==========================================================
+# # Eixo Y
+# # ==========================================================
+# 
+# scale_y_continuous(
+#   
+#   limits = c(
+#     0,
+#     100
+#   ),
+#   
+#   breaks = seq(
+#     0,
+#     100,
+#     20
+#   ),
+#   
+#   labels = function(x) {
+#     paste0(
+#       x,
+#       "%"
+#     )
+#   },
+#   
+#   expand = expansion(
+#     mult = c(
+#       0,
+#       0.12
+#     )
+#   )
+# ) +
+#   
+#   
+#   # ==========================================================
+# # Títulos
+# # ==========================================================
+# 
+# labs(
+#   
+#   x = "Sessão",
+#   
+#   y = "Participação (%)",
+#   
+#   fill = "Perfil"
+# ) +
+#   
+#   
+#   # ==========================================================
+# # Tema
+# # ==========================================================
+# 
+# theme_minimal() +
+#   
+#   theme(
+#     
+#     plot.background = element_rect(
+#       fill = "#f5f3f4",
+#       colour = NA
+#     ),
+#     
+#     panel.background = element_rect(
+#       fill = "#f5f3f4",
+#       colour = NA
+#     ),
+#     
+#     panel.grid.major.x = element_blank(),
+#     
+#     panel.grid.minor.x = element_blank(),
+#     
+#     axis.text.x = element_text(
+#       size = 14,
+#       colour = "black"
+#     ),
+#     
+#     axis.text.y = element_text(
+#       size = 12,
+#       colour = "black"
+#     ),
+#     
+#     axis.title = element_text(
+#       size = 13
+#     ),
+#     
+#     legend.position = "bottom",
+#     
+#     legend.title = element_text(
+#       size = 13,
+#       face = "bold"
+#     ),
+#     
+#     legend.text = element_text(
+#       size = 12
+#     )
+#   )
