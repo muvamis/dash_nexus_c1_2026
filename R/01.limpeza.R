@@ -103,62 +103,62 @@ Perfil_NEXUS <- Presencas_Nexus
 ############### QUALIDADE DAS SESSOES NEXUS
 
 
-Qualidade_Sessoes <- read_excel("Qualidade_Sessoes.xlsx")
+Qualidade_Sessoes <- read_excel("Presencas_Nexus_Nacala_Monapo_Qual_Sessoes.xlsx")
 
-Qualidade_Sessoes <- Qualidade_Sessoes %>%
-  select(-c(9))
-
-
-Qualidade_Sessoes <- Qualidade_Sessoes %>%
-  rename(
-    Nome_Sessao = Numero_da_Sess_o 
-   
-  )
-
-
-Qualidade_Sessoes <- Qualidade_Sessoes %>%
-  select(
-    Data, Distrito, Comunidade, Facilitadores, Nome_Sessao,
-    Quantos_Participantes_responderam_Muito_Mau, 
-    Quantos_Participantes_responderam_Mau,
-    Quantos_Participantes_responderam_Neutro,
-    Quantos_Participantes_responderam_Bom,
-    Quantos_Participantes_responderam_Muito_Bom,
-    everything()
-  ) %>%
-  arrange(Data, Distrito, Comunidade)
-
-Qualidade_Sessoes <- Qualidade_Sessoes %>%
-  mutate(
-    across(
-      starts_with("Quantos_Participantes_responderam"),
-      ~ as.numeric(.)
-    )
-  )
-
-Qualidade_Sessoes <- Qualidade_Sessoes %>%
-  rename(
-   Muito_Mau = Quantos_Participantes_responderam_Muito_Mau, 
-   Mau = Quantos_Participantes_responderam_Mau,
-    Neutro = Quantos_Participantes_responderam_Neutro,
-    Bom = Quantos_Participantes_responderam_Bom,
-    Muito_Bom = Quantos_Participantes_responderam_Muito_Bom
-    
-  )
-
-# Calcular Total_Participantes usando os novos nomes
-Qualidade_Sessoes <- Qualidade_Sessoes %>%
-  mutate(
-    Total_Participantes = rowSums(
-      select(., Muito_Mau, Mau, Neutro, Bom, Muito_Bom),
-      na.rm = TRUE
-    )
-  )
+# Qualidade_Sessoes <- Qualidade_Sessoes %>%
+#   select(-c(9))
+# 
+# 
+# Qualidade_Sessoes <- Qualidade_Sessoes %>%
+#   rename(
+#     Nome_Sessao = Numero_da_Sess_o 
+#    
+#   )
+# 
+# 
+# Qualidade_Sessoes <- Qualidade_Sessoes %>%
+#   select(
+#     Data, Distrito, Comunidade, Facilitadores, Nome_Sessao,
+#     Quantos_Participantes_responderam_Muito_Mau, 
+#     Quantos_Participantes_responderam_Mau,
+#     Quantos_Participantes_responderam_Neutro,
+#     Quantos_Participantes_responderam_Bom,
+#     Quantos_Participantes_responderam_Muito_Bom,
+#     everything()
+#   ) %>%
+#   arrange(Data, Distrito, Comunidade)
+# 
+# Qualidade_Sessoes <- Qualidade_Sessoes %>%
+#   mutate(
+#     across(
+#       starts_with("Quantos_Participantes_responderam"),
+#       ~ as.numeric(.)
+#     )
+#   )
+# 
+# Qualidade_Sessoes <- Qualidade_Sessoes %>%
+#   rename(
+#    Muito_Mau = Quantos_Participantes_responderam_Muito_Mau, 
+#    Mau = Quantos_Participantes_responderam_Mau,
+#     Neutro = Quantos_Participantes_responderam_Neutro,
+#     Bom = Quantos_Participantes_responderam_Bom,
+#     Muito_Bom = Quantos_Participantes_responderam_Muito_Bom
+#     
+#   )
+# 
+# # Calcular Total_Participantes usando os novos nomes
+# Qualidade_Sessoes <- Qualidade_Sessoes %>%
+#   mutate(
+#     Total_Participantes = rowSums(
+#       select(., Muito_Mau, Mau, Neutro, Bom, Muito_Bom),
+#       na.rm = TRUE
+#     )
+#   )
 
 # Criar linha de totais
 totais <- Qualidade_Sessoes %>%
   summarise(
-    Data = NA,  # ou "" se preferir
+    # Data = NA,  # ou "" se preferir
     Distrito = "TOTAL",
     Comunidade = "",
     Facilitadores = "",
@@ -678,7 +678,7 @@ Ficha_Monitoria_Feiras <- read_excel("Ficha_Monitoria_Feiras.xlsx")
 # BASE DOS GRANTS - NEXUS
 # ============================================================
 
-Nexus_Grants <- read_excel("Monapo_Participantes_Nexus_Negocios_Grants.xlsx")
+Nexus_Grants <- read_excel("Monapo_Nacala_Participantes_Nexus_Negocios_Grants.xlsx")
 
 table(Nexus_Grants$`Desistentes pos-grants`)
 

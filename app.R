@@ -3746,11 +3746,519 @@ server <- function(input, output, session){
     # ============================================================
     # RESULTADOS DOS GRANTS
     # ============================================================
-    
+    # 
+    # dados_resultados_grants <- reactive({
+    #   
+    #   df <- dados_grant_filtrados()
+    #   
+    #   
+    #   # ==========================================================
+    #   # 1. TOTAL DE PARTICIPANTES
+    #   # ==========================================================
+    #   
+    #   total_participantes <- nrow(df)
+    #   
+    #   
+    #   # ==========================================================
+    #   # 2. RECEBERAM GRANTS
+    #   # ==========================================================
+    #   
+    #   recebeu_sim <- sum(
+    #     trimws(as.character(df$`Recebeu grants`)) == "Sim",
+    #     na.rm = TRUE
+    #   )
+    #   
+    #   recebeu_nao <- sum(
+    #     trimws(as.character(df$`Recebeu grants`)) == "Não",
+    #     na.rm = TRUE
+    #   )
+    #   
+    #   
+    #   # ==========================================================
+    #   # 3. FILTRAR QUEM RECEBEU GRANTS
+    #   # ==========================================================
+    #   
+    #   df_grants <- df %>%
+    #     filter(
+    #       trimws(as.character(`Recebeu grants`)) == "Sim"
+    #     )
+    #   
+    #   
+    #   total_grants <- nrow(df_grants)
+    #   
+    #   
+    #   # ==========================================================
+    #   # 4. SUCESSO NO NEGÓCIO
+    #   # ==========================================================
+    #   
+    #   sucesso_sim <- sum(
+    #     trimws(as.character(
+    #       df_grants$`Sucesso no negocio`
+    #     )) == "Sim",
+    #     na.rm = TRUE
+    #   )
+    #   
+    #   sucesso_nao <- sum(
+    #     trimws(as.character(
+    #       df_grants$`Sucesso no negocio`
+    #     )) == "Não",
+    #     na.rm = TRUE
+    #   )
+    #   
+    #   
+    #   # ==========================================================
+    #   # 5. RECUPEROU O INVESTIMENTO
+    #   # ==========================================================
+    #   
+    #   recuperou_sim <- sum(
+    #     trimws(as.character(
+    #       df_grants$`Recuperou o investimento de  3.000MZN`
+    #     )) == "Sim",
+    #     na.rm = TRUE
+    #   )
+    #   
+    #   recuperou_nao <- sum(
+    #     trimws(as.character(
+    #       df_grants$`Recuperou o investimento de  3.000MZN`
+    #     )) == "Não",
+    #     na.rm = TRUE
+    #   )
+    #   
+    #   
+    #   # ==========================================================
+    #   # 6. DIFICULDADES
+    #   # ==========================================================
+    #   
+    #   dificuldades_sim <- sum(
+    #     trimws(as.character(
+    #       df_grants$`Dificuldades no negocio`
+    #     )) == "Sim",
+    #     na.rm = TRUE
+    #   )
+    #   
+    #   dificuldades_nao <- sum(
+    #     trimws(as.character(
+    #       df_grants$`Dificuldades no negocio`
+    #     )) == "Não",
+    #     na.rm = TRUE
+    #   )
+    #   
+    #   
+    #   # ==========================================================
+    #   # 7. DESISTENTES
+    #   # ==========================================================
+    #   
+    #   desistentes_sim <- sum(
+    #     trimws(as.character(
+    #       df_grants$`Desistentes pos-grants`
+    #     )) == "Sim",
+    #     na.rm = TRUE
+    #   )
+    #   
+    #   desistentes_nao <- sum(
+    #     trimws(as.character(
+    #       df_grants$`Desistentes pos-grants`
+    #     )) == "Não",
+    #     na.rm = TRUE
+    #   )
+    #   
+    #   
+    #   # ==========================================================
+    #   # 8. BASE FINAL
+    #   # ==========================================================
+    #   
+    #   resultado <- tibble(
+    #     
+    #     Indicador = c(
+    #       
+    #       "Receberam Grants",
+    #       "Receberam Grants",
+    #       
+    #       "Sucesso no Negócio",
+    #       "Sucesso no Negócio",
+    #       
+    #       "Recuperou o Investimento de 3.000 MZN",
+    #       "Recuperou o Investimento de 3.000 MZN",
+    #       
+    #       "Dificuldades no Negócio",
+    #       "Dificuldades no Negócio",
+    #       
+    #       "Desistentes",
+    #       "Desistentes"
+    #       
+    #     ),
+    #     
+    #     
+    #     Resposta = c(
+    #       
+    #       "Sim",
+    #       "Não",
+    #       
+    #       "Sim",
+    #       "Não",
+    #       
+    #       "Sim",
+    #       "Não",
+    #       
+    #       "Sim",
+    #       "Não",
+    #       
+    #       "Sim",
+    #       "Não"
+    #       
+    #     ),
+    #     
+    #     
+    #     Quantidade = c(
+    #       
+    #       recebeu_sim,
+    #       recebeu_nao,
+    #       
+    #       sucesso_sim,
+    #       sucesso_nao,
+    #       
+    #       recuperou_sim,
+    #       recuperou_nao,
+    #       
+    #       dificuldades_sim,
+    #       dificuldades_nao,
+    #       
+    #       desistentes_sim,
+    #       desistentes_nao
+    #       
+    #     )
+    #     
+    #   ) %>%
+    #     
+    #     mutate(
+    #       
+    #       # ======================================================
+    #       # DEFINIR ORDEM
+    #       # ======================================================
+    #       
+    #       Indicador = factor(
+    #         Indicador,
+    #         
+    #         levels = c(
+    #           
+    #           "Receberam Grants",
+    #           
+    #           "Sucesso no Negócio",
+    #           
+    #           "Recuperou o Investimento de 3.000 MZN",
+    #           
+    #           "Dificuldades no Negócio",
+    #           
+    #           "Desistentes"
+    #           
+    #         )
+    #         
+    #       ),
+    #       
+    #       
+    #       Resposta = factor(
+    #         Resposta,
+    #         
+    #         levels = c(
+    #           "Sim",
+    #           "Não"
+    #         )
+    #         
+    #       )
+    #       
+    #     ) %>%
+    #     
+    #     # ========================================================
+    #   # PERCENTAGEM
+    #   # ========================================================
+    #   
+    #   group_by(Indicador) %>%
+    #     
+    #     mutate(
+    #       
+    #       Percentagem = case_when(
+    #         
+    #         Indicador == "Receberam Grants" &
+    #           total_participantes > 0 ~
+    #           
+    #           Quantidade /
+    #           total_participantes * 100,
+    #         
+    #         
+    #         total_grants > 0 ~
+    #           
+    #           Quantidade /
+    #           total_grants * 100,
+    #         
+    #         
+    #         TRUE ~ 0
+    #         
+    #       ),
+    #       
+    #       
+    #       Percentagem = round(
+    #         Percentagem,
+    #         1
+    #       ),
+    #       
+    #       
+    #       Label = paste0(
+    #         
+    #         Quantidade,
+    #         
+    #         " (",
+    #         
+    #         format(
+    #           Percentagem,
+    #           nsmall = 1
+    #         ),
+    #         
+    #         "%)"
+    #         
+    #       )
+    #       
+    #     ) %>%
+    #     
+    #     ungroup()
+    #   
+    #   
+    #   resultado
+    #   
+    # })
+    # 
+    # 
+    # # ============================================================
+    # # GRÁFICO
+    # # ============================================================
+    # 
+    # output$grafico_resultados_grants <- renderPlotly({
+    #   
+    #   df <- dados_resultados_grants()
+    #   
+    #   
+    #   # ==========================================================
+    #   # CORES
+    #   # ==========================================================
+    #   
+    #   cores <- c(
+    #     
+    #     "Sim" = "#ffc107",
+    #     
+    #     "Não" = "#69C7BE"
+    #     
+    #   )
+    #   
+    #   
+    #   # ==========================================================
+    #   # GRÁFICO
+    #   # ==========================================================
+    #   
+    #   plot_ly(
+    #     
+    #     df,
+    #     
+    #     x = ~Percentagem,
+    #     
+    #     y = ~Indicador,
+    #     
+    #     color = ~Resposta,
+    #     
+    #     colors = cores,
+    #     
+    #     type = "bar",
+    #     
+    #     orientation = "h",
+    #     
+    #     
+    #     # ========================================================
+    #     # TEXTO DENTRO DAS BARRAS
+    #     # ========================================================
+    #     
+    #     text = ~Label,
+    #     
+    #     textposition = "inside",
+    #     
+    #     insidetextanchor = "middle",
+    #     
+    #     textfont = list(
+    #       color = "white",
+    #       size = 18
+    #     ),
+    #     
+    #     
+    #     # ========================================================
+    #     # HOVER
+    #     # ========================================================
+    #     
+    #     hovertemplate = paste(
+    #       
+    #       "<b>%{y}</b><br>",
+    #       
+    #       "%{text}",
+    #       
+    #       "<extra></extra>"
+    #       
+    #     )
+    #     
+    #   ) %>%
+    #     
+    #     
+    #     layout(
+    #       
+    #       # ======================================================
+    #       # BARRAS EMPILHADAS
+    #       # ======================================================
+    #       
+    #       barmode = "stack",
+    #       
+    #       
+    #       # ======================================================
+    #       # TÍTULO
+    #       # ======================================================
+    #       
+    #       title = paste0(
+    #         
+    #         "Resultados dos Grants - Projeto Nexus",
+    #         
+    #         "<br><sup>",
+    #         
+    #         "Base: ",
+    #         
+    #         nrow(
+    #           dados_grant_filtrados()
+    #         ),
+    #         
+    #         " participantes | ",
+    #         
+    #         sum(
+    #           trimws(
+    #             as.character(
+    #               dados_grant_filtrados()$`Recebeu grants`
+    #             )
+    #           ) == "Sim",
+    #           na.rm = TRUE
+    #         ),
+    #         
+    #         " receberam Grants",
+    #         
+    #         "</sup>"
+    #         
+    #       ),
+    #       
+    #       
+    #       paper_bgcolor = "#f5f3f4",
+    #       
+    #       plot_bgcolor = "#f5f3f4",
+    #       
+    #       showlegend = TRUE,
+    #       
+    #       
+    #       # ======================================================
+    #       # EIXO X EM PERCENTAGEM
+    #       # ======================================================
+    #       
+    #       xaxis = list(
+    #         
+    #         title = "Percentagem (%)",
+    #         
+    #         range = c(0, 100),
+    #         
+    #         tickmode = "array",
+    #         
+    #         tickvals = c(
+    #           0,
+    #           20,
+    #           40,
+    #           60,
+    #           80,
+    #           100
+    #         ),
+    #         
+    #         ticktext = c(
+    #           "0%",
+    #           "20%",
+    #           "40%",
+    #           "60%",
+    #           "80%",
+    #           "100%"
+    #         ),
+    #         
+    #         zeroline = FALSE,
+    #         
+    #         showgrid = TRUE
+    #         
+    #       ),
+    #       
+    #       
+    #       # ======================================================
+    #       # EIXO Y
+    #       # ======================================================
+    #       
+    #       yaxis = list(
+    #         
+    #         title = "",
+    #         
+    #         categoryorder = "array",
+    #         
+    #         categoryarray = c(
+    #           
+    #           "Desistentes",
+    #           
+    #           "Dificuldades no Negócio",
+    #           
+    #           "Recuperou o Investimento de 3.000 MZN",
+    #           
+    #           "Sucesso no Negócio",
+    #           
+    #           "Receberam Grants"
+    #           
+    #         )
+    #         
+    #       ),
+    #       
+    #       
+    #       # ======================================================
+    #       # LEGENDA
+    #       # ======================================================
+    #       
+    #       legend = list(
+    #         
+    #         title = list(
+    #           text = "Resposta"
+    #         ),
+    #         
+    #         orientation = "h",
+    #         
+    #         x = 0.35,
+    #         
+    #         y = -0.20
+    #         
+    #       ),
+    #       
+    #       
+    #       # ======================================================
+    #       # MARGENS
+    #       # ======================================================
+    #       
+    #       margin = list(
+    #         
+    #         l = 280,
+    #         
+    #         r = 40,
+    #         
+    #         t = 90,
+    #         
+    #         b = 80
+    #         
+    #       )
+    #       
+    #     )
+    #   
+    # })
+
     dados_resultados_grants <- reactive({
       
       df <- dados_grant_filtrados()
-      
       
       # ==========================================================
       # 1. TOTAL DE PARTICIPANTES
@@ -3760,22 +4268,7 @@ server <- function(input, output, session){
       
       
       # ==========================================================
-      # 2. RECEBERAM GRANTS
-      # ==========================================================
-      
-      recebeu_sim <- sum(
-        trimws(as.character(df$`Recebeu grants`)) == "Sim",
-        na.rm = TRUE
-      )
-      
-      recebeu_nao <- sum(
-        trimws(as.character(df$`Recebeu grants`)) == "Não",
-        na.rm = TRUE
-      )
-      
-      
-      # ==========================================================
-      # 3. FILTRAR QUEM RECEBEU GRANTS
+      # 2. QUEM RECEBEU GRANTS
       # ==========================================================
       
       df_grants <- df %>%
@@ -3783,12 +4276,11 @@ server <- function(input, output, session){
           trimws(as.character(`Recebeu grants`)) == "Sim"
         )
       
-      
       total_grants <- nrow(df_grants)
       
       
       # ==========================================================
-      # 4. SUCESSO NO NEGÓCIO
+      # 3. INDICADORES - APENAS "SIM"
       # ==========================================================
       
       sucesso_sim <- sum(
@@ -3798,17 +4290,6 @@ server <- function(input, output, session){
         na.rm = TRUE
       )
       
-      sucesso_nao <- sum(
-        trimws(as.character(
-          df_grants$`Sucesso no negocio`
-        )) == "Não",
-        na.rm = TRUE
-      )
-      
-      
-      # ==========================================================
-      # 5. RECUPEROU O INVESTIMENTO
-      # ==========================================================
       
       recuperou_sim <- sum(
         trimws(as.character(
@@ -3817,17 +4298,6 @@ server <- function(input, output, session){
         na.rm = TRUE
       )
       
-      recuperou_nao <- sum(
-        trimws(as.character(
-          df_grants$`Recuperou o investimento de  3.000MZN`
-        )) == "Não",
-        na.rm = TRUE
-      )
-      
-      
-      # ==========================================================
-      # 6. DIFICULDADES
-      # ==========================================================
       
       dificuldades_sim <- sum(
         trimws(as.character(
@@ -3836,17 +4306,6 @@ server <- function(input, output, session){
         na.rm = TRUE
       )
       
-      dificuldades_nao <- sum(
-        trimws(as.character(
-          df_grants$`Dificuldades no negocio`
-        )) == "Não",
-        na.rm = TRUE
-      )
-      
-      
-      # ==========================================================
-      # 7. DESISTENTES
-      # ==========================================================
       
       desistentes_sim <- sum(
         trimws(as.character(
@@ -3855,77 +4314,27 @@ server <- function(input, output, session){
         na.rm = TRUE
       )
       
-      desistentes_nao <- sum(
-        trimws(as.character(
-          df_grants$`Desistentes pos-grants`
-        )) == "Não",
-        na.rm = TRUE
-      )
-      
       
       # ==========================================================
-      # 8. BASE FINAL
+      # 4. BASE FINAL
       # ==========================================================
       
       resultado <- tibble(
         
         Indicador = c(
-          
           "Receberam Grants",
-          "Receberam Grants",
-          
           "Sucesso no Negócio",
-          "Sucesso no Negócio",
-          
           "Recuperou o Investimento de 3.000 MZN",
-          "Recuperou o Investimento de 3.000 MZN",
-          
           "Dificuldades no Negócio",
-          "Dificuldades no Negócio",
-          
-          "Desistentes",
           "Desistentes"
-          
         ),
-        
-        
-        Resposta = c(
-          
-          "Sim",
-          "Não",
-          
-          "Sim",
-          "Não",
-          
-          "Sim",
-          "Não",
-          
-          "Sim",
-          "Não",
-          
-          "Sim",
-          "Não"
-          
-        ),
-        
         
         Quantidade = c(
-          
-          recebeu_sim,
-          recebeu_nao,
-          
+          total_grants,
           sucesso_sim,
-          sucesso_nao,
-          
           recuperou_sim,
-          recuperou_nao,
-          
           dificuldades_sim,
-          dificuldades_nao,
-          
-          desistentes_sim,
-          desistentes_nao
-          
+          desistentes_sim
         )
         
       ) %>%
@@ -3933,99 +4342,58 @@ server <- function(input, output, session){
         mutate(
           
           # ======================================================
-          # DEFINIR ORDEM
+          # ORDEM DOS INDICADORES
           # ======================================================
           
           Indicador = factor(
             Indicador,
-            
             levels = c(
-              
               "Receberam Grants",
-              
               "Sucesso no Negócio",
-              
               "Recuperou o Investimento de 3.000 MZN",
-              
               "Dificuldades no Negócio",
-              
               "Desistentes"
-              
             )
-            
           ),
           
           
-          Resposta = factor(
-            Resposta,
-            
-            levels = c(
-              "Sim",
-              "Não"
-            )
-            
-          )
-          
-        ) %>%
-        
-        # ========================================================
-      # PERCENTAGEM
-      # ========================================================
-      
-      group_by(Indicador) %>%
-        
-        mutate(
+          # ======================================================
+          # PERCENTAGEM
+          # ======================================================
           
           Percentagem = case_when(
             
             Indicador == "Receberam Grants" &
               total_participantes > 0 ~
               
-              Quantidade /
-              total_participantes * 100,
-            
+              Quantidade / total_participantes * 100,
             
             total_grants > 0 ~
               
-              Quantidade /
-              total_grants * 100,
-            
+              Quantidade / total_grants * 100,
             
             TRUE ~ 0
-            
           ),
           
+          Percentagem = round(Percentagem, 1),
           
-          Percentagem = round(
-            Percentagem,
-            1
-          ),
           
+          # ======================================================
+          # LABEL
+          # ======================================================
           
           Label = paste0(
-            
             Quantidade,
-            
             " (",
-            
-            format(
-              Percentagem,
-              nsmall = 1
-            ),
-            
+            format(Percentagem, nsmall = 1),
             "%)"
-            
           )
-          
-        ) %>%
-        
-        ungroup()
+        )
       
       
       resultado
       
     })
-    
     
     # ============================================================
     # GRÁFICO
@@ -4037,16 +4405,10 @@ server <- function(input, output, session){
       
       
       # ==========================================================
-      # CORES
+      # COR
       # ==========================================================
       
-      cores <- c(
-        
-        "Sim" = "#ffc107",
-        
-        "Não" = "#69C7BE"
-        
-      )
+      cor_barra <- "#ffc107"
       
       
       # ==========================================================
@@ -4061,17 +4423,17 @@ server <- function(input, output, session){
         
         y = ~Indicador,
         
-        color = ~Resposta,
-        
-        colors = cores,
-        
         type = "bar",
         
         orientation = "h",
         
+        marker = list(
+          color = cor_barra
+        ),
+        
         
         # ========================================================
-        # TEXTO DENTRO DAS BARRAS
+        # TEXTO DENTRO DA BARRA
         # ========================================================
         
         text = ~Label,
@@ -4082,7 +4444,7 @@ server <- function(input, output, session){
         
         textfont = list(
           color = "white",
-          size = 13
+          size = 18
         ),
         
         
@@ -4091,13 +4453,9 @@ server <- function(input, output, session){
         # ========================================================
         
         hovertemplate = paste(
-          
           "<b>%{y}</b><br>",
-          
           "%{text}",
-          
           "<extra></extra>"
-          
         )
         
       ) %>%
@@ -4106,10 +4464,10 @@ server <- function(input, output, session){
         layout(
           
           # ======================================================
-          # BARRAS EMPILHADAS
+          # BARRAS SIMPLES
           # ======================================================
           
-          barmode = "stack",
+          barmode = "group",
           
           
           # ======================================================
@@ -4124,9 +4482,7 @@ server <- function(input, output, session){
             
             "Base: ",
             
-            nrow(
-              dados_grant_filtrados()
-            ),
+            nrow(dados_grant_filtrados()),
             
             " participantes | ",
             
@@ -4150,11 +4506,11 @@ server <- function(input, output, session){
           
           plot_bgcolor = "#f5f3f4",
           
-          showlegend = TRUE,
+          showlegend = FALSE,
           
           
           # ======================================================
-          # EIXO X EM PERCENTAGEM
+          # EIXO X
           # ======================================================
           
           xaxis = list(
@@ -4218,25 +4574,6 @@ server <- function(input, output, session){
           
           
           # ======================================================
-          # LEGENDA
-          # ======================================================
-          
-          legend = list(
-            
-            title = list(
-              text = "Resposta"
-            ),
-            
-            orientation = "h",
-            
-            x = 0.35,
-            
-            y = -0.20
-            
-          ),
-          
-          
-          # ======================================================
           # MARGENS
           # ======================================================
           
@@ -4244,19 +4581,17 @@ server <- function(input, output, session){
             
             l = 280,
             
-            r = 40,
+            r = 60,
             
             t = 90,
             
-            b = 80
+            b = 60
             
           )
           
         )
       
     })
-
-
 # ============================================================
 # TABELA
 # ============================================================
@@ -5992,10 +6327,11 @@ output$tabela_resultados_grants <- renderDT({
       
     })
     
+    
     output$grafico_qualidade_sessoes <- renderPlotly({
       
       # ============================================================
-      # 1. Base inicial
+      # 1. BASE INICIAL
       # ============================================================
       
       dados <- Qualidade_Sessoes %>%
@@ -6005,7 +6341,7 @@ output$tabela_resultados_grants <- renderDT({
         )
       
       # ============================================================
-      # 2. Aplicar filtros
+      # 2. APLICAR FILTROS
       # ============================================================
       
       if(input$filtro_distrito_Qual != "TODOS"){
@@ -6024,31 +6360,27 @@ output$tabela_resultados_grants <- renderDT({
       }
       
       # ============================================================
-      # 3. Agregar por sessão
+      # 3. AGREGAR POR SESSÃO
       # ============================================================
       
       dados_sessoes_agregado <- dados %>%
         group_by(Nome_Sessao) %>%
         summarise(
-          
-          Muito_Mau  = sum(Muito_Mau, na.rm = TRUE),
-          Mau        = sum(Mau, na.rm = TRUE),
-          Neutro     = sum(Neutro, na.rm = TRUE),
-          Bom        = sum(Bom, na.rm = TRUE),
-          Muito_Bom  = sum(Muito_Bom, na.rm = TRUE),
-          
+          Muito_Mau = sum(Muito_Mau, na.rm = TRUE),
+          Mau       = sum(Mau, na.rm = TRUE),
+          Neutro    = sum(Neutro, na.rm = TRUE),
+          Bom       = sum(Bom, na.rm = TRUE),
+          Muito_Bom = sum(Muito_Bom, na.rm = TRUE),
           .groups = "drop"
-          
         )
       
       # ============================================================
-      # 4. Formato longo
+      # 4. FORMATO LONGO E PERCENTAGENS
       # ============================================================
       
       dados_grafico <- dados_sessoes_agregado %>%
         
         pivot_longer(
-          
           cols = c(
             Muito_Bom,
             Bom,
@@ -6056,30 +6388,36 @@ output$tabela_resultados_grants <- renderDT({
             Mau,
             Muito_Mau
           ),
-          
           names_to = "Avaliacao",
           values_to = "Quantidade"
-          
         ) %>%
         
         group_by(Nome_Sessao) %>%
         
         mutate(
           
-          Percentagem = Quantidade / sum(Quantidade) * 100,
+          Total = sum(Quantidade, na.rm = TRUE),
+          
+          Percentagem = ifelse(
+            Total > 0,
+            Quantidade / Total * 100,
+            0
+          ),
           
           Texto = paste0(
             "<b>", gsub("_", " ", Nome_Sessao), "</b>",
-            "<br><b>Classificação:</b> ", gsub("_", " ", Avaliacao),
-            "<br><b>Quantidade:</b> ", Quantidade,
-            "<br><b>Percentagem:</b> ", round(Percentagem, 1), "%"
+            "<br><b>Classificação:</b> ",
+            gsub("_", " ", Avaliacao),
+            "<br><b>Quantidade:</b> ",
+            Quantidade,
+            "<br><b>Percentagem:</b> ",
+            round(Percentagem, 1), "%"
           ),
           
-          Rotulo = paste0(
-            Quantidade,
-            "<br>",
-            round(Percentagem, 1),
-            "%"
+          Rotulo = ifelse(
+            Percentagem > 0,
+            paste0(round(Percentagem, 1), "%"),
+            ""
           )
           
         ) %>%
@@ -6087,13 +6425,11 @@ output$tabela_resultados_grants <- renderDT({
         ungroup()
       
       # ============================================================
-      # Ordenação
+      # 5. ORDENAR AVALIAÇÕES
       # ============================================================
       
       dados_grafico$Avaliacao <- factor(
-        
         dados_grafico$Avaliacao,
-        
         levels = c(
           "Muito_Bom",
           "Bom",
@@ -6101,33 +6437,31 @@ output$tabela_resultados_grants <- renderDT({
           "Mau",
           "Muito_Mau"
         )
-        
-      )
-      
-      dados_grafico$Nome_Sessao <- factor(
-        
-        dados_grafico$Nome_Sessao,
-        
-        levels = rev(paste0("Sessão_", 1:12))
-        
       )
       
       # ============================================================
-      # Cores
+      # 6. ORDENAR SESSÕES
+      # ============================================================
+      
+      dados_grafico$Nome_Sessao <- factor(
+        dados_grafico$Nome_Sessao,
+        levels = rev(paste0("Sessão_", 1:12))
+      )
+      
+      # ============================================================
+      # 7. CORES
       # ============================================================
       
       cores <- c(
-        
         "Muito_Bom" = "#9942D4",
-        "Bom" = "#F77333",
-        "Neutro" = "#ffc107",
-        "Mau" = "#69C7BE",
+        "Bom"       = "#F77333",
+        "Neutro"    = "#ffc107",
+        "Mau"       = "#69C7BE",
         "Muito_Mau" = "#a2d2ff"
-        
       )
       
       # ============================================================
-      # Construção do gráfico
+      # 8. CONSTRUIR GRÁFICO
       # ============================================================
       
       p <- plot_ly()
@@ -6138,16 +6472,14 @@ output$tabela_resultados_grants <- renderDT({
           filter(Avaliacao == i)
         
         p <- p %>%
-          
           add_trace(
             
             data = df,
             
-            x = ~Quantidade,
+            x = ~Percentagem,
             y = ~Nome_Sessao,
             
             type = "bar",
-            
             orientation = "h",
             
             name = gsub("_", " ", i),
@@ -6158,27 +6490,24 @@ output$tabela_resultados_grants <- renderDT({
             
             text = ~Rotulo,
             
-            textposition = "auto",
+            textposition = "inside",
             
             insidetextanchor = "middle",
             
             textfont = list(
-              size = 12,
+              size = 16,
               color = "white"
             ),
             
-            hovertemplate = paste(
-              "%{customdata}<extra></extra>"
-            ),
+            hovertemplate = "%{customdata}<extra></extra>",
             
             customdata = ~Texto
             
           )
-        
       }
       
       # ============================================================
-      # Layout
+      # 9. LAYOUT
       # ============================================================
       
       p %>%
@@ -6189,37 +6518,74 @@ output$tabela_resultados_grants <- renderDT({
           
           title = "",
           
+          showlegend = TRUE,
+          
           paper_bgcolor = "#f5f3f4",
           
           plot_bgcolor = "#f5f3f4",
           
-          showlegend = TRUE,
+          # --------------------------------------------------------
+          # EIXO X EM PERCENTAGENS
+          # --------------------------------------------------------
           
           xaxis = list(
-            title = "Número de participantes"
+            
+            title = "Percentagem de participantes",
+            
+            range = c(0, 100),
+            
+            tickmode = "array",
+            
+            tickvals = seq(0, 100, 10),
+            
+            ticktext = paste0(
+              seq(0, 100, 10),
+              "%"
+            ),
+            
+            automargin = TRUE
+            
           ),
+          
+          # --------------------------------------------------------
+          # EIXO Y
+          # --------------------------------------------------------
           
           yaxis = list(
             title = "",
             automargin = TRUE
           ),
           
+          # --------------------------------------------------------
+          # LEGENDA ALINHADA COM A VISUALIZAÇÃO
+          # --------------------------------------------------------
+          
           legend = list(
             
             orientation = "h",
             
-            x = 0,
+            x = 0.5,
+            xanchor = "center",
             
-            y = -0.18
+            y = -0.16,
+            yanchor = "top",
+            
+            traceorder = "normal",
+            
+            font = list(
+              size = 12
+            )
             
           ),
           
           margin = list(
             l = 120,
-            r = 20,
+            r = 30,
             t = 20,
-            b = 80
-          )
+            b = 100
+          ),
+          
+          height = 800
           
         ) %>%
         
@@ -6234,37 +6600,22 @@ output$tabela_resultados_grants <- renderDT({
           scrollZoom = TRUE,
           
           toImageButtonOptions = list(
-            
             format = "png",
-            
             filename = "Qualidade_das_Sessoes",
-            
-            height = 700,
-            
-            width = 1400,
-            
+            height = 900,
+            width = 1500,
             scale = 3
-            
           ),
           
           modeBarButtonsToAdd = list(
-            
             "zoom2d",
-            
             "pan2d",
-            
             "select2d",
-            
             "lasso2d",
-            
             "zoomIn2d",
-            
             "zoomOut2d",
-            
             "autoScale2d",
-            
             "resetScale2d"
-            
           )
           
         )
@@ -6272,10 +6623,11 @@ output$tabela_resultados_grants <- renderDT({
     })
     
     
+    
     output$grafico_qualidade_mentoria <- renderPlotly({
       
       # ============================================================
-      # 1. Base inicial
+      # 1. BASE INICIAL
       # ============================================================
       
       dados <- Qualidade_Mentoria %>%
@@ -6285,7 +6637,7 @@ output$tabela_resultados_grants <- renderDT({
         )
       
       # ============================================================
-      # 2. Aplicar filtros
+      # 2. APLICAR FILTROS
       # ============================================================
       
       if(input$filtro_distrito_mentoria_qual != "TODOS"){
@@ -6304,31 +6656,27 @@ output$tabela_resultados_grants <- renderDT({
       }
       
       # ============================================================
-      # 3. Agregar respostas por sessão
+      # 3. AGREGAR RESPOSTAS POR SESSÃO
       # ============================================================
       
       dados_sessoes_agregado <- dados %>%
         group_by(Nome_Sessao) %>%
         summarise(
-          
           Muito_Mau = sum(Muito_Mau, na.rm = TRUE),
-          Mau = sum(Mau, na.rm = TRUE),
-          Neutro = sum(Neutro, na.rm = TRUE),
-          Bom = sum(Bom, na.rm = TRUE),
+          Mau       = sum(Mau, na.rm = TRUE),
+          Neutro    = sum(Neutro, na.rm = TRUE),
+          Bom       = sum(Bom, na.rm = TRUE),
           Muito_Bom = sum(Muito_Bom, na.rm = TRUE),
-          
           .groups = "drop"
-          
         )
       
       # ============================================================
-      # 4. Formato longo
+      # 4. FORMATO LONGO E PERCENTAGENS
       # ============================================================
       
       dados_grafico <- dados_sessoes_agregado %>%
         
         pivot_longer(
-          
           cols = c(
             Muito_Bom,
             Bom,
@@ -6336,30 +6684,36 @@ output$tabela_resultados_grants <- renderDT({
             Mau,
             Muito_Mau
           ),
-          
           names_to = "Avaliacao",
           values_to = "Quantidade"
-          
         ) %>%
         
         group_by(Nome_Sessao) %>%
         
         mutate(
           
-          Percentagem = Quantidade / sum(Quantidade) * 100,
+          Total = sum(Quantidade, na.rm = TRUE),
           
-          Texto = paste0(
-            "<b>", gsub("_"," ",Nome_Sessao), "</b>",
-            "<br><b>Classificação:</b> ", gsub("_"," ",Avaliacao),
-            "<br><b>Quantidade:</b> ", Quantidade,
-            "<br><b>Percentagem:</b> ", round(Percentagem,1), "%"
+          Percentagem = ifelse(
+            Total > 0,
+            Quantidade / Total * 100,
+            0
           ),
           
-          Rotulo = paste0(
+          Texto = paste0(
+            "<b>", gsub("_", " ", Nome_Sessao), "</b>",
+            "<br><b>Classificação:</b> ",
+            gsub("_", " ", Avaliacao),
+            "<br><b>Quantidade:</b> ",
             Quantidade,
-            "<br>",
-            round(Percentagem,1),
-            "%"
+            "<br><b>Percentagem:</b> ",
+            round(Percentagem, 1), "%"
+          ),
+          
+          Rotulo = ifelse(
+            Percentagem > 0,
+            paste0(round(Percentagem, 1), "%"),
+            ""
           )
           
         ) %>%
@@ -6367,13 +6721,11 @@ output$tabela_resultados_grants <- renderDT({
         ungroup()
       
       # ============================================================
-      # Ordenação
+      # 5. ORDENAR AVALIAÇÕES
       # ============================================================
       
       dados_grafico$Avaliacao <- factor(
-        
         dados_grafico$Avaliacao,
-        
         levels = c(
           "Muito_Bom",
           "Bom",
@@ -6381,33 +6733,31 @@ output$tabela_resultados_grants <- renderDT({
           "Mau",
           "Muito_Mau"
         )
-        
-      )
-      
-      dados_grafico$Nome_Sessao <- factor(
-        
-        dados_grafico$Nome_Sessao,
-        
-        levels = rev(paste0("Sessão_",1:12))
-        
       )
       
       # ============================================================
-      # Cores
+      # 6. ORDENAR SESSÕES
+      # ============================================================
+      
+      dados_grafico$Nome_Sessao <- factor(
+        dados_grafico$Nome_Sessao,
+        levels = rev(paste0("Sessão_", 1:12))
+      )
+      
+      # ============================================================
+      # 7. CORES
       # ============================================================
       
       cores <- c(
-        
         "Muito_Bom" = "#9942D4",
-        "Bom" = "#F77333",
-        "Neutro" = "#ffc107",
-        "Mau" = "#69C7BE",
+        "Bom"       = "#F77333",
+        "Neutro"    = "#ffc107",
+        "Mau"       = "#69C7BE",
         "Muito_Mau" = "#a2d2ff"
-        
       )
       
       # ============================================================
-      # Construção do gráfico
+      # 8. CONSTRUIR GRÁFICO
       # ============================================================
       
       p <- plot_ly()
@@ -6418,19 +6768,17 @@ output$tabela_resultados_grants <- renderDT({
           filter(Avaliacao == i)
         
         p <- p %>%
-          
           add_trace(
             
             data = df,
             
-            x = ~Quantidade,
+            x = ~Percentagem,
             y = ~Nome_Sessao,
             
             type = "bar",
-            
             orientation = "h",
             
-            name = gsub("_"," ",i),
+            name = gsub("_", " ", i),
             
             marker = list(
               color = cores[i]
@@ -6438,12 +6786,12 @@ output$tabela_resultados_grants <- renderDT({
             
             text = ~Rotulo,
             
-            textposition = "auto",
+            textposition = "inside",
             
             insidetextanchor = "middle",
             
             textfont = list(
-              size = 11,
+              size = 16,
               color = "white"
             ),
             
@@ -6452,8 +6800,11 @@ output$tabela_resultados_grants <- renderDT({
             customdata = ~Texto
             
           )
-        
       }
+      
+      # ============================================================
+      # 9. LAYOUT
+      # ============================================================
       
       p %>%
         
@@ -6469,27 +6820,65 @@ output$tabela_resultados_grants <- renderDT({
           
           plot_bgcolor = "#f5f3f4",
           
+          # --------------------------------------------------------
+          # EIXO X EM PERCENTAGENS
+          # --------------------------------------------------------
+          
           xaxis = list(
-            title = "Número de participantes",
+            
+            title = "Percentagem de participantes",
+            
+            range = c(0, 100),
+            
+            tickmode = "array",
+            
+            tickvals = seq(0, 100, 10),
+            
+            ticktext = paste0(
+              seq(0, 100, 10),
+              "%"
+            ),
+            
             automargin = TRUE
+            
           ),
+          
+          # --------------------------------------------------------
+          # EIXO Y
+          # --------------------------------------------------------
           
           yaxis = list(
             title = "",
             automargin = TRUE
           ),
           
+          # --------------------------------------------------------
+          # LEGENDA
+          # --------------------------------------------------------
+          
           legend = list(
+            
             orientation = "h",
-            x = 0,
-            y = -0.15
+            
+            x = 0.5,
+            xanchor = "center",
+            
+            y = -0.16,
+            yanchor = "top",
+            
+            traceorder = "normal",
+            
+            font = list(
+              size = 12
+            )
+            
           ),
           
           margin = list(
             l = 120,
             r = 30,
             t = 20,
-            b = 80
+            b = 100
           ),
           
           height = 800
@@ -6507,21 +6896,14 @@ output$tabela_resultados_grants <- renderDT({
           scrollZoom = TRUE,
           
           toImageButtonOptions = list(
-            
             format = "png",
-            
             filename = "Qualidade_Mentoria",
-            
             height = 900,
-            
             width = 1500,
-            
             scale = 3
-            
           ),
           
           modeBarButtonsToAdd = list(
-            
             "zoom2d",
             "pan2d",
             "select2d",
@@ -6530,7 +6912,6 @@ output$tabela_resultados_grants <- renderDT({
             "zoomOut2d",
             "autoScale2d",
             "resetScale2d"
-            
           )
           
         )
