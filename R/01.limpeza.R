@@ -99,6 +99,72 @@ table(Presencas_Nexus$Situacao_Participante, Presencas_Nexus$Sexo)
 Perfil_NEXUS <- Presencas_Nexus
 
 
+# ============================================================
+# 2. IDENTIFICAR QUEM NÃO INICIOU
+#    Regra: Ausente nas 12 sessões
+# ============================================================
+
+sessoes <- paste0("Sessão_", 1:12)
+
+Perfil_NEXUS <- Perfil_NEXUS %>%
+  mutate(
+    Status_Novo = if_else(
+      rowSums(
+        across(
+          all_of(sessoes),
+          ~ trimws(as.character(.)) == "Ausente"
+        ),
+        na.rm = TRUE
+      ) == 12,
+      "Não Iniciou",
+      "Iniciou"
+    )
+  )
+
+
+# ============================================================
+# 3. TABELA DOS QUE NÃO INICIARAM
+#    Distrito + Situação do Participante + Sexo
+# ============================================================
+
+tabela_nao_iniciaram <- Perfil_NEXUS %>%
+  filter(Status_Novo == "Não Iniciou") %>%
+  group_by(
+    Distrito,
+    Situacao_Participante,
+    Sexo
+  ) %>%
+  summarise(
+    Nao_Iniciaram = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(
+    Distrito,
+    Situacao_Participante,
+    Sexo
+  )
+
+tabela_nao_iniciaram
+
+
+tabela_iniciaram <- Perfil_NEXUS %>%
+  filter(Status_Novo == "Iniciou") %>%
+  group_by(
+    Distrito,
+    Comunidade,
+    Sexo
+  ) %>%
+  summarise(
+    Iniciaram = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(
+    Distrito,
+    Comunidade,
+    Sexo
+  )
+
+tabela_iniciaram
 
 ############### QUALIDADE DAS SESSOES NEXUS
 
@@ -181,6 +247,821 @@ Qualidade_Sessoes <- bind_rows(Qualidade_Sessoes, totais)
 Lista_Grants_Mentoria <- read_excel("Lista_Grants_Mentoria.xlsx")
 
 Perfil_NEXUS_GERAL <- read_excel("Perfil_NEXUS_GERAL.xlsx")
+
+# ============================================================
+# PACOTES
+# ============================================================
+
+library(readxl)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+
+
+# ============================================================
+# 1. IMPORTAR AS BASES
+# ============================================================
+
+Lista_Grants_Mentoria <- read_excel("Lista_Grants_Mentoria.xlsx")
+
+Perfil_NEXUS_GERAL <- read_excel("Perfil_NEXUS_GERAL.xlsx")
+
+# 
+# # ============================================================
+# # 2. PADRONIZAR NOMES
+# # ============================================================
+# 
+# Lista_Grants_Mentoria <- Lista_Grants_Mentoria %>%
+#   mutate(
+#     Nome_Participante = str_squish(str_to_upper(Nome_Participante))
+#   )
+# 
+# Perfil_NEXUS_GERAL <- Perfil_NEXUS_GERAL %>%
+#   mutate(
+#     Nome_Participante = str_squish(str_to_upper(Nome_Participante))
+#   )
+# 
+# 
+# # ============================================================
+# # 1. PARTICIPANTES EM MENTORIA QUE NÃO TINHAM NEGÓCIO
+# # ============================================================
+# 
+# transicao <- resultado %>%
+#   filter(
+#     Mentoria == "Sim",
+#     Tem_Negocio == "Não"
+#   ) %>%
+#   mutate(
+#     Agora_Tem_Negocio = !is.na(Tipo_Negocio) &
+#       str_squish(Tipo_Negocio) != ""
+#   )
+# 
+# 
+# # ============================================================
+# # 2. RESUMO POR DISTRITO
+# # ============================================================
+# 
+# dados_distrito <- transicao %>%
+#   group_by(Distrito) %>%
+#   summarise(
+#     `Não tinham negócio` = n(),
+#     `Agora têm negócio` = sum(Agora_Tem_Negocio),
+#     .groups = "drop"
+#   ) %>%
+#   pivot_longer(
+#     cols = c(
+#       `Não tinham negócio`,
+#       `Agora têm negócio`
+#     ),
+#     names_to = "Situacao",
+#     values_to = "N"
+#   )
+# 
+# 
+# # ============================================================
+# # 3. GRÁFICO 1 — DISTRITO
+# # ============================================================
+# 
+# ggplot(
+#   dados_distrito,
+#   aes(
+#     x = Distrito,
+#     y = N,
+#     fill = Situacao
+#   )
+# ) +
+#   geom_col(
+#     position = position_dodge(width = 0.8),
+#     width = 0.7
+#   ) +
+#   geom_text(
+#     aes(label = N),
+#     position = position_dodge(width = 0.8),
+#     vjust = -0.3,
+#     size = 5
+#   ) +
+#   labs(
+#     title = "Evolução dos negócios",
+#     subtitle = "Participantes em mentoria que não tinham negócio",
+#     x = "Distrito",
+#     y = "Número de participantes",
+#     fill = NULL
+#   ) +
+#   theme_minimal() +
+#   theme(
+#     plot.title = element_text(
+#       face = "bold",
+#       size = 16
+#     ),
+#     plot.subtitle = element_text(
+#       size = 12
+#     ),
+#     legend.position = "top"
+#   )
+# 
+# 
+# # ============================================================
+# # 4. RESUMO POR DISTRITO E SEXO
+# # ============================================================
+# 
+# dados_distrito_sexo <- transicao %>%
+#   group_by(Distrito, Sexo) %>%
+#   summarise(
+#     `Não tinham negócio` = n(),
+#     `Agora têm negócio` = sum(Agora_Tem_Negocio),
+#     .groups = "drop"
+#   ) %>%
+#   pivot_longer(
+#     cols = c(
+#       `Não tinham negócio`,
+#       `Agora têm negócio`
+#     ),
+#     names_to = "Situacao",
+#     values_to = "N"
+#   )
+# 
+# 
+# # ============================================================
+# # 5. GRÁFICO 2 — DISTRITO E SEXO
+# # ============================================================
+# 
+# ggplot(
+#   dados_distrito_sexo,
+#   aes(
+#     x = Distrito,
+#     y = N,
+#     fill = Situacao
+#   )
+# ) +
+#   geom_col(
+#     position = position_dodge(width = 0.8),
+#     width = 0.7
+#   ) +
+#   geom_text(
+#     aes(label = N),
+#     position = position_dodge(width = 0.8),
+#     vjust = -0.3,
+#     size = 4
+#   ) +
+#   facet_wrap(~Sexo) +
+#   labs(
+#     title = "Evolução dos negócios por Distrito e Sexo",
+#     subtitle = "Participantes em mentoria que não tinham negócio",
+#     x = "Distrito",
+#     y = "Número de participantes",
+#     fill = NULL
+#   ) +
+#   theme_minimal() +
+#   theme(
+#     plot.title = element_text(
+#       face = "bold",
+#       size = 16
+#     ),
+#     plot.subtitle = element_text(
+#       size = 12
+#     ),
+#     strip.text = element_text(
+#       face = "bold",
+#       size = 12
+#     ),
+#     legend.position = "top"
+#   )
+# 
+# dados_distrito_pct <- transicao %>%
+#   group_by(Distrito) %>%
+#   summarise(
+#     Total_nao_tinham = n(),
+#     Agora_tem = sum(Agora_Tem_Negocio),
+#     .groups = "drop"
+#   ) %>%
+#   mutate(
+#     `Não tinham negócio` = 100,
+#     `Agora têm negócio` = round(
+#       Agora_tem / Total_nao_tinham * 100, 1
+#     )
+#   ) %>%
+#   select(
+#     Distrito,
+#     `Não tinham negócio`,
+#     `Agora têm negócio`
+#   ) %>%
+#   pivot_longer(
+#     cols = c(`Não tinham negócio`, `Agora têm negócio`),
+#     names_to = "Situacao",
+#     values_to = "Percentagem"
+#   )
+# 
+# ggplot(
+#   dados_distrito_pct,
+#   aes(
+#     x = Distrito,
+#     y = Percentagem,
+#     fill = Situacao
+#   )
+# ) +
+#   geom_col(
+#     position = position_dodge(width = 0.8),
+#     width = 0.7
+#   ) +
+#   geom_text(
+#     aes(label = paste0(Percentagem, "%")),
+#     position = position_dodge(width = 0.8),
+#     vjust = -0.3,
+#     size = 5
+#   ) +
+#   scale_y_continuous(
+#     limits = c(0, 110),
+#     breaks = seq(0, 100, 20),
+#     labels = function(x) paste0(x, "%")
+#   ) +
+#   labs(
+#     title = "Evolução dos negócios por Distrito",
+#     subtitle = "Base: participantes em mentoria que inicialmente não tinham negócio",
+#     x = "Distrito",
+#     y = "Percentagem",
+#     fill = NULL
+#   ) +
+#   theme_minimal() +
+#   theme(
+#     plot.title = element_text(face = "bold", size = 16),
+#     plot.subtitle = element_text(size = 12),
+#     legend.position = "top"
+#   )
+# 
+# 
+# dados_distrito_sexo_pct <- transicao %>%
+#   group_by(Distrito, Sexo) %>%
+#   summarise(
+#     Total_nao_tinham = n(),
+#     Agora_tem = sum(Agora_Tem_Negocio),
+#     .groups = "drop"
+#   ) %>%
+#   mutate(
+#     `Não tinham negócio` = 100,
+#     `Agora têm negócio` = round(
+#       Agora_tem / Total_nao_tinham * 100, 1
+#     )
+#   ) %>%
+#   select(
+#     Distrito,
+#     Sexo,
+#     `Não tinham negócio`,
+#     `Agora têm negócio`
+#   ) %>%
+#   pivot_longer(
+#     cols = c(`Não tinham negócio`, `Agora têm negócio`),
+#     names_to = "Situacao",
+#     values_to = "Percentagem"
+#   )
+# 
+# ggplot(
+#   dados_distrito_sexo_pct,
+#   aes(
+#     x = Distrito,
+#     y = Percentagem,
+#     fill = Situacao
+#   )
+# ) +
+#   geom_col(
+#     position = position_dodge(width = 0.8),
+#     width = 0.7
+#   ) +
+#   geom_text(
+#     aes(label = paste0(Percentagem, "%")),
+#     position = position_dodge(width = 0.8),
+#     vjust = -0.3,
+#     size = 4
+#   ) +
+#   facet_wrap(~Sexo) +
+#   scale_y_continuous(
+#     limits = c(0, 110),
+#     breaks = seq(0, 100, 20),
+#     labels = function(x) paste0(x, "%")
+#   ) +
+#   labs(
+#     title = "Evolução dos negócios por Distrito e Sexo",
+#     subtitle = "Base: participantes em mentoria que inicialmente não tinham negócio",
+#     x = "Distrito",
+#     y = "Percentagem",
+#     fill = NULL
+#   ) +
+#   theme_minimal() +
+#   theme(
+#     plot.title = element_text(face = "bold", size = 16),
+#     plot.subtitle = element_text(size = 12),
+#     strip.text = element_text(face = "bold", size = 12),
+#     legend.position = "top"
+#   )
+# 
+# mentoria_negocio <- Lista_Grants_Mentoria %>%
+#   filter(Mentoria == "Sim") %>%
+#   mutate(
+#     Situacao_Negocio = case_when(
+#       !is.na(Tipo_Negocio) &
+#         str_squish(Tipo_Negocio) != "" ~ "Com negócio",
+#       TRUE ~ "Sem negócio"
+#     )
+#   )
+# 
+# dados_negocio_distrito <- mentoria_negocio %>%
+#   count(Distrito, Situacao_Negocio) %>%
+#   group_by(Distrito) %>%
+#   mutate(
+#     Percentagem = round(n / sum(n) * 100, 1)
+#   ) %>%
+#   ungroup()
+# 
+# ggplot(
+#   dados_negocio_distrito,
+#   aes(
+#     x = Distrito,
+#     y = Percentagem,
+#     fill = Situacao_Negocio
+#   )
+# ) +
+#   geom_col(
+#     position = position_dodge(width = 0.8),
+#     width = 0.7
+#   ) +
+#   geom_text(
+#     aes(
+#       label = paste0(Percentagem, "%")
+#     ),
+#     position = position_dodge(width = 0.8),
+#     vjust = -0.3,
+#     size = 5
+#   ) +
+#   scale_y_continuous(
+#     limits = c(0, 110),
+#     breaks = seq(0, 100, 20),
+#     labels = function(x) paste0(x, "%")
+#   ) +
+#   labs(
+#     title = "Participantes em Mentoria por situação do negócio",
+#     subtitle = "Percentagem dentro de cada Distrito",
+#     x = "Distrito",
+#     y = "Percentagem",
+#     fill = NULL
+#   ) +
+#   theme_minimal() +
+#   theme(
+#     plot.title = element_text(face = "bold", size = 16),
+#     plot.subtitle = element_text(size = 12),
+#     legend.position = "top"
+#   )
+# 
+# # ============================================================
+# # PARTICIPANTES DA MENTORIA QUE NÃO TINHAM NEGÓCIO
+# # E QUANTOS AGORA TÊM NEGÓCIO
+# # ============================================================
+# 
+# transicao_negocio <- resultado %>%
+#   filter(
+#     Mentoria == "Sim",
+#     Tem_Negocio == "Não"
+#   ) %>%
+#   mutate(
+#     Agora_Tem_Negocio = !is.na(Tipo_Negocio) &
+#       str_squish(Tipo_Negocio) != ""
+#   )
+# 
+# # ============================================================
+# # RESUMO GERAL
+# # ============================================================
+# 
+# resumo_geral <- transicao_negocio %>%
+#   summarise(
+#     Total_Mentoria = n_distinct(resultado$Nome_Participante[
+#       resultado$Mentoria == "Sim"
+#     ]),
+#     Nao_Tinham_Negocio = n(),
+#     Agora_Tem_Negocio = sum(Agora_Tem_Negocio),
+#     Percentagem_Agora_Tem =
+#       round(Agora_Tem_Negocio / Nao_Tinham_Negocio * 100, 1)
+#   )
+# 
+# resumo_geral
+# 
+# # ============================================================
+# # GRÁFICO GERAL — MENTORIA E EVOLUÇÃO DO NEGÓCIO
+# # ============================================================
+# 
+# dados_grafico_geral <- tibble(
+#   Indicador = c(
+#     "Total Mentoria",
+#     "Não tinham negócio",
+#     "Agora têm negócio"
+#   ),
+#   N = c(
+#     resumo_geral$Total_Mentoria,
+#     resumo_geral$Nao_Tinham_Negocio,
+#     resumo_geral$Agora_Tem_Negocio
+#   )
+# )
+# 
+# ggplot(
+#   dados_grafico_geral,
+#   aes(
+#     x = Indicador,
+#     y = N,
+#     fill = Indicador
+#   )
+# ) +
+#   geom_col(
+#     width = 0.65
+#   ) +
+#   geom_text(
+#     aes(label = N),
+#     vjust = -0.4,
+#     size = 6,
+#     fontface = "bold"
+#   ) +
+#   scale_fill_manual(
+#     values = c(
+#       "Total Mentoria" = "#9442d4",
+#       "Não tinham negócio" = "#F77333",
+#       "Agora têm negócio" = "#69C7BE"
+#     )
+#   ) +
+#   scale_y_continuous(
+#     limits = c(
+#       0,
+#       max(dados_grafico_geral$N) * 1.15
+#     ),
+#     breaks = scales::pretty_breaks(n = 6)
+#   ) +
+#   labs(
+#     title = "Mentoria e evolução dos negócios",
+#     subtitle = paste0(
+#       "Dos ",
+#       resumo_geral$Nao_Tinham_Negocio,
+#       " participantes que não tinham negócio, ",
+#       resumo_geral$Agora_Tem_Negocio,
+#       " agora têm negócio (",
+#       resumo_geral$Percentagem_Agora_Tem,
+#       "%)"
+#     ),
+#     x = NULL,
+#     y = "Número de participantes"
+#   ) +
+#   theme_minimal() +
+#   theme(
+#     plot.title = element_text(
+#       face = "bold",
+#       size = 17
+#     ),
+#     plot.subtitle = element_text(
+#       size = 12
+#     ),
+#     axis.text.x = element_text(
+#       size = 11
+#     ),
+#     legend.position = "none"
+#   )
+# 
+# # ============================================================
+# # GRÁFICO GERAL — MENTORIA E EVOLUÇÃO DO NEGÓCIO POR SEXO
+# # ============================================================
+# 
+# dados_grafico_sexo <- resultado %>%
+#   filter(Mentoria == "Sim") %>%
+#   mutate(
+#     Agora_Tem_Negocio = !is.na(Tipo_Negocio) &
+#       str_squish(Tipo_Negocio) != ""
+#   ) %>%
+#   group_by(Sexo) %>%
+#   summarise(
+#     Total_Mentoria = n(),
+#     Nao_Tinham_Negocio = sum(Tem_Negocio == "Não", na.rm = TRUE),
+#     Agora_Tem_Negocio = sum(
+#       Tem_Negocio == "Não" & Agora_Tem_Negocio,
+#       na.rm = TRUE
+#     ),
+#     .groups = "drop"
+#   ) %>%
+#   pivot_longer(
+#     cols = c(
+#       Total_Mentoria,
+#       Nao_Tinham_Negocio,
+#       Agora_Tem_Negocio
+#     ),
+#     names_to = "Indicador",
+#     values_to = "N"
+#   ) %>%
+#   mutate(
+#     Indicador = recode(
+#       Indicador,
+#       "Total_Mentoria" = "Total Mentoria",
+#       "Nao_Tinham_Negocio" = "Não tinham negócio",
+#       "Agora_Tem_Negocio" = "Agora têm negócio"
+#     )
+#   )
+# ggplot(
+#   dados_grafico_sexo,
+#   aes(
+#     x = Sexo,
+#     y = N,
+#     fill = Indicador
+#   )
+# ) +
+#   geom_col(
+#     position = position_dodge(width = 0.8),
+#     width = 0.7
+#   ) +
+#   geom_text(
+#     aes(label = N),
+#     position = position_dodge(width = 0.8),
+#     vjust = -0.4,
+#     size = 5,
+#     fontface = "bold"
+#   ) +
+#   scale_fill_manual(
+#     values = c(
+#       "Total Mentoria" = "#9442d4",
+#       "Não tinham negócio" = "#F77333",
+#       "Agora têm negócio" = "#69C7BE"
+#     )
+#   ) +
+#   scale_y_continuous(
+#     limits = c(
+#       0,
+#       max(dados_grafico_sexo$N) * 1.15
+#     ),
+#     breaks = scales::pretty_breaks(n = 6)
+#   ) +
+#   labs(
+#     title = "Mentoria e evolução dos negócios por Sexo",
+#     subtitle = "Total de participantes e evolução dos negócios",
+#     x = "Sexo",
+#     y = "Número de participantes",
+#     fill = NULL
+#   ) +
+#   theme_minimal() +
+#   theme(
+#     plot.title = element_text(
+#       face = "bold",
+#       size = 17
+#     ),
+#     plot.subtitle = element_text(
+#       size = 12
+#     ),
+#     axis.text.x = element_text(
+#       size = 12,
+#       face = "bold"
+#     ),
+#     legend.position = "top"
+#   )
+# 
+# # ============================================================
+# # PERCENTAGENS POR SEXO
+# # ============================================================
+# 
+# dados_pct_sexo <- resultado %>%
+#   filter(Mentoria == "Sim") %>%
+#   mutate(
+#     Agora_Tem_Negocio = !is.na(Tipo_Negocio) &
+#       str_squish(Tipo_Negocio) != ""
+#   ) %>%
+#   group_by(Sexo) %>%
+#   summarise(
+#     Total_Mentoria = n(),
+#     
+#     Nao_Tinham_Negocio = sum(
+#       Tem_Negocio == "Não",
+#       na.rm = TRUE
+#     ),
+#     
+#     Agora_Tem_Negocio = sum(
+#       Tem_Negocio == "Não" & Agora_Tem_Negocio,
+#       na.rm = TRUE
+#     ),
+#     
+#     .groups = "drop"
+#   ) %>%
+#   mutate(
+#     Percentual_Nao_Tinham =
+#       round(
+#         Nao_Tinham_Negocio / Total_Mentoria * 100,
+#         1
+#       ),
+#     
+#     Percentual_Agora_Tem =
+#       round(
+#         Agora_Tem_Negocio / Nao_Tinham_Negocio * 100,
+#         1
+#       )
+#   )
+# 
+# dados_pct_sexo
+# 
+# 
+# dados_grafico_pct_sexo <- dados_pct_sexo %>%
+#   select(
+#     Sexo,
+#     Percentual_Nao_Tinham,
+#     Percentual_Agora_Tem
+#   ) %>%
+#   pivot_longer(
+#     cols = c(
+#       Percentual_Nao_Tinham,
+#       Percentual_Agora_Tem
+#     ),
+#     names_to = "Indicador",
+#     values_to = "Percentagem"
+#   ) %>%
+#   mutate(
+#     Indicador = recode(
+#       Indicador,
+#       "Percentual_Nao_Tinham" = "Não tinham negócio",
+#       "Percentual_Agora_Tem" = "Agora têm negócio"
+#     )
+#   )
+# 
+# ggplot(
+#   dados_grafico_pct_sexo,
+#   aes(
+#     x = Sexo,
+#     y = Percentagem,
+#     fill = Indicador
+#   )
+# ) +
+#   geom_col(
+#     position = position_dodge(width = 0.8),
+#     width = 0.7
+#   ) +
+#   geom_text(
+#     aes(
+#       label = paste0(Percentagem, "%")
+#     ),
+#     position = position_dodge(width = 0.8),
+#     vjust = -0.4,
+#     size = 5,
+#     fontface = "bold"
+#   ) +
+#   scale_fill_manual(
+#     values = c(
+#       "Não tinham negócio" = "#F77333",
+#       "Agora têm negócio" = "#69C7BE"
+#     )
+#   ) +
+#   scale_y_continuous(
+#     limits = c(0, 110),
+#     breaks = seq(0, 100, 20),
+#     labels = function(x) paste0(x, "%")
+#   ) +
+#   labs(
+#     title = "Evolução dos negócios por Sexo",
+#     subtitle = "Participantes em Mentoria",
+#     x = "Sexo",
+#     y = "Percentagem",
+#     fill = NULL
+#   ) +
+#   theme_minimal() +
+#   theme(
+#     plot.title = element_text(
+#       face = "bold",
+#       size = 17
+#     ),
+#     plot.subtitle = element_text(
+#       size = 12
+#     ),
+#     axis.text.x = element_text(
+#       size = 12,
+#       face = "bold"
+#     ),
+#     legend.position = "top"
+#   )
+# 
+# # ============================================================
+# # PERCENTAGENS — DISTRITO E SEXO
+# # ============================================================
+# 
+# dados_pct_distrito_sexo <- resultado %>%
+#   filter(Mentoria == "Sim") %>%
+#   mutate(
+#     Agora_Tem_Negocio = !is.na(Tipo_Negocio) &
+#       str_squish(Tipo_Negocio) != ""
+#   ) %>%
+#   group_by(Distrito, Sexo) %>%
+#   summarise(
+#     Total_Mentoria = n(),
+#     
+#     Nao_Tinham_Negocio = sum(
+#       Tem_Negocio == "Não",
+#       na.rm = TRUE
+#     ),
+#     
+#     Agora_Tem_Negocio = sum(
+#       Tem_Negocio == "Não" & Agora_Tem_Negocio,
+#       na.rm = TRUE
+#     ),
+#     
+#     .groups = "drop"
+#   ) %>%
+#   mutate(
+#     Percentual_Nao_Tinham =
+#       round(
+#         Nao_Tinham_Negocio /
+#           Total_Mentoria * 100,
+#         1
+#       ),
+#     
+#     Percentual_Agora_Tem =
+#       round(
+#         Agora_Tem_Negocio /
+#           Nao_Tinham_Negocio * 100,
+#         1
+#       )
+#   )
+# 
+# dados_grafico_pct_distrito_sexo <- dados_pct_distrito_sexo %>%
+#   select(
+#     Distrito,
+#     Sexo,
+#     Percentual_Nao_Tinham,
+#     Percentual_Agora_Tem
+#   ) %>%
+#   pivot_longer(
+#     cols = c(
+#       Percentual_Nao_Tinham,
+#       Percentual_Agora_Tem
+#     ),
+#     names_to = "Indicador",
+#     values_to = "Percentagem"
+#   ) %>%
+#   mutate(
+#     Indicador = recode(
+#       Indicador,
+#       "Percentual_Nao_Tinham" =
+#         "Não tinham negócio",
+#       "Percentual_Agora_Tem" =
+#         "Agora têm negócio"
+#     )
+#   )
+# 
+# 
+# 
+# ggplot(
+#   dados_grafico_pct_distrito_sexo,
+#   aes(
+#     x = Distrito,
+#     y = Percentagem,
+#     fill = Indicador
+#   )
+# ) +
+#   geom_col(
+#     position = position_dodge(width = 0.8),
+#     width = 0.7
+#   ) +
+#   geom_text(
+#     aes(
+#       label = paste0(Percentagem, "%")
+#     ),
+#     position = position_dodge(width = 0.8),
+#     vjust = -0.4,
+#     size = 4.5,
+#     fontface = "bold"
+#   ) +
+#   scale_fill_manual(
+#     values = c(
+#       "Não tinham negócio" = "#F77333",
+#       "Agora têm negócio" = "#69C7BE"
+#     )
+#   ) +
+#   scale_y_continuous(
+#     limits = c(0, 110),
+#     breaks = seq(0, 100, 20),
+#     labels = function(x) paste0(x, "%")
+#   ) +
+#   facet_wrap(~Sexo) +
+#   labs(
+#     title = "Evolução dos negócios por Distrito e Sexo",
+#     subtitle = "Participantes em Mentoria",
+#     x = "Distrito",
+#     y = "Percentagem",
+#     fill = NULL
+#   ) +
+#   theme_stata() +
+#   theme(
+#     plot.title = element_text(
+#       face = "bold",
+#       size = 17
+#     ),
+#     plot.subtitle = element_text(
+#       size = 12
+#     ),
+#     axis.text.x = element_text(
+#       size = 11,
+#       face = "bold"
+#     ),
+#     strip.text = element_text(
+#       face = "bold",
+#       size = 13
+#     ),
+#     legend.position = "top"
+#   )
+
+
 
 Lista_Grants_Mentoria <- Lista_Grants_Mentoria %>%
      select(-c(2, 4, 5, 6, 7))
@@ -535,7 +1416,13 @@ col_sessoes_ind <- col_sessoes_ind[
   )
 ]
 
-
+Presencas_Individuais_Nexus <- Presencas_Individuais_Nexus %>%
+  mutate(
+    across(
+      all_of(col_sessoes_ind),
+      ~ replace_na(.x, "Ausente")
+    )
+  )
 
 # =====================================================
 # ORGANIZAR BASE FINAL

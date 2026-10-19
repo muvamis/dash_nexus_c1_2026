@@ -931,11 +931,11 @@ ui <- navbarPage(
           
           sidebarPanel(
             
-            actionButton(
-              "botao_atualizar",
-              "📥 Carregar / Atualizar Dados",
-              class = "btn btn-warning"
-            )
+            # actionButton(
+            #   "botao_atualizar",
+            #   "📥 Carregar / Atualizar Dados",
+            #   class = "btn btn-warning"
+            # )
             
           ),
           
@@ -4280,32 +4280,20 @@ server <- function(input, output, session){
       
       
       # ==========================================================
-      # 3. INDICADORES - APENAS "SIM"
+      # 3. INVESTIRAM / NÃO DESISTIRAM
       # ==========================================================
       
-      sucesso_sim <- sum(
+      investiram_sim <- sum(
         trimws(as.character(
-          df_grants$`Sucesso no negocio`
-        )) == "Sim",
+          df_grants$`Desistentes pos-grants`
+        )) == "Não",
         na.rm = TRUE
       )
       
       
-      recuperou_sim <- sum(
-        trimws(as.character(
-          df_grants$`Recuperou o investimento de  3.000MZN`
-        )) == "Sim",
-        na.rm = TRUE
-      )
-      
-      
-      dificuldades_sim <- sum(
-        trimws(as.character(
-          df_grants$`Dificuldades no negocio`
-        )) == "Sim",
-        na.rm = TRUE
-      )
-      
+      # ==========================================================
+      # 4. DESISTENTES
+      # ==========================================================
       
       desistentes_sim <- sum(
         trimws(as.character(
@@ -4316,13 +4304,56 @@ server <- function(input, output, session){
       
       
       # ==========================================================
-      # 4. BASE FINAL
+      # 5. INDICADORES ENTRE OS QUE INVESTIRAM
+      # ==========================================================
+      
+      df_investiram <- df_grants %>%
+        filter(
+          trimws(as.character(
+            `Desistentes pos-grants`
+          )) == "Não"
+        )
+      
+      
+      total_investiram <- nrow(df_investiram)
+      
+      
+      # Sucesso no negócio
+      sucesso_sim <- sum(
+        trimws(as.character(
+          df_investiram$`Sucesso no negocio`
+        )) == "Sim",
+        na.rm = TRUE
+      )
+      
+      
+      # Recuperou o investimento
+      recuperou_sim <- sum(
+        trimws(as.character(
+          df_investiram$`Recuperou o investimento de  3.000MZN`
+        )) == "Sim",
+        na.rm = TRUE
+      )
+      
+      
+      # Dificuldades no negócio
+      dificuldades_sim <- sum(
+        trimws(as.character(
+          df_investiram$`Dificuldades no negocio`
+        )) == "Sim",
+        na.rm = TRUE
+      )
+      
+      
+      # ==========================================================
+      # 6. BASE FINAL
       # ==========================================================
       
       resultado <- tibble(
         
         Indicador = c(
           "Receberam Grants",
+          "Investiram no Negócio",
           "Sucesso no Negócio",
           "Recuperou o Investimento de 3.000 MZN",
           "Dificuldades no Negócio",
@@ -4331,10 +4362,20 @@ server <- function(input, output, session){
         
         Quantidade = c(
           total_grants,
+          investiram_sim,
           sucesso_sim,
           recuperou_sim,
           dificuldades_sim,
           desistentes_sim
+        ),
+        
+        Base = c(
+          total_participantes,
+          total_grants,
+          total_investiram,
+          total_investiram,
+          total_investiram,
+          total_grants
         )
         
       ) %>%
@@ -4342,17 +4383,19 @@ server <- function(input, output, session){
         mutate(
           
           # ======================================================
-          # ORDEM DOS INDICADORES
+          # ORDEM
           # ======================================================
           
           Indicador = factor(
             Indicador,
             levels = c(
-              "Receberam Grants",
-              "Sucesso no Negócio",
-              "Recuperou o Investimento de 3.000 MZN",
+              
               "Dificuldades no Negócio",
-              "Desistentes"
+              "Recuperou o Investimento de 3.000 MZN",
+              "Sucesso no Negócio",
+              "Investiram no Negócio",
+              "Desistentes",
+              "Receberam Grants"
             )
           ),
           
@@ -4363,14 +4406,8 @@ server <- function(input, output, session){
           
           Percentagem = case_when(
             
-            Indicador == "Receberam Grants" &
-              total_participantes > 0 ~
-              
-              Quantidade / total_participantes * 100,
-            
-            total_grants > 0 ~
-              
-              Quantidade / total_grants * 100,
+            Base > 0 ~
+              Quantidade / Base * 100,
             
             TRUE ~ 0
           ),
@@ -4396,7 +4433,7 @@ server <- function(input, output, session){
     })
     
     # ============================================================
-    # GRÁFICO
+    # 11. GRÁFICO DE RESULTADOS DOS GRANTS
     # ============================================================
     
     output$grafico_resultados_grants <- renderPlotly({
@@ -4405,7 +4442,7 @@ server <- function(input, output, session){
       
       
       # ==========================================================
-      # COR
+      # COR DA BARRA
       # ==========================================================
       
       cor_barra <- "#ffc107"
@@ -4433,7 +4470,7 @@ server <- function(input, output, session){
         
         
         # ========================================================
-        # TEXTO DENTRO DA BARRA
+        # LABEL DENTRO DA BARRA
         # ========================================================
         
         text = ~Label,
@@ -4453,143 +4490,163 @@ server <- function(input, output, session){
         # ========================================================
         
         hovertemplate = paste(
+          
           "<b>%{y}</b><br>",
-          "%{text}",
+          
+          "Resultado: %{text}<br>",
+          
           "<extra></extra>"
+          
         )
         
       ) %>%
         
         
-        layout(
+        # ========================================================
+      # LAYOUT
+      # ========================================================
+      
+      layout(
+        
+        # ------------------------------------------------------
+        # BARRAS
+        # ------------------------------------------------------
+        
+        barmode = "group",
+        
+        
+        # ------------------------------------------------------
+        # TÍTULO
+        # ------------------------------------------------------
+        
+        title = paste0(
           
-          # ======================================================
-          # BARRAS SIMPLES
-          # ======================================================
+          "Resultados dos Grants - Projeto Nexus",
           
-          barmode = "group",
+          "<br><sup>",
           
+          "Base: ",
           
-          # ======================================================
-          # TÍTULO
-          # ======================================================
-          
-          title = paste0(
-            
-            "Resultados dos Grants - Projeto Nexus",
-            
-            "<br><sup>",
-            
-            "Base: ",
-            
-            nrow(dados_grant_filtrados()),
-            
-            " participantes | ",
-            
-            sum(
-              trimws(
-                as.character(
-                  dados_grant_filtrados()$`Recebeu grants`
-                )
-              ) == "Sim",
-              na.rm = TRUE
-            ),
-            
-            " receberam Grants",
-            
-            "</sup>"
-            
+          nrow(
+            dados_grant_filtrados()
           ),
           
+          " participantes | ",
           
-          paper_bgcolor = "#f5f3f4",
-          
-          plot_bgcolor = "#f5f3f4",
-          
-          showlegend = FALSE,
-          
-          
-          # ======================================================
-          # EIXO X
-          # ======================================================
-          
-          xaxis = list(
-            
-            title = "Percentagem (%)",
-            
-            range = c(0, 100),
-            
-            tickmode = "array",
-            
-            tickvals = c(
-              0,
-              20,
-              40,
-              60,
-              80,
-              100
-            ),
-            
-            ticktext = c(
-              "0%",
-              "20%",
-              "40%",
-              "60%",
-              "80%",
-              "100%"
-            ),
-            
-            zeroline = FALSE,
-            
-            showgrid = TRUE
-            
+          sum(
+            trimws(
+              as.character(
+                dados_grant_filtrados()$`Recebeu grants`
+              )
+            ) == "Sim",
+            na.rm = TRUE
           ),
           
+          " receberam Grants",
           
-          # ======================================================
-          # EIXO Y
-          # ======================================================
+          "</sup>"
           
-          yaxis = list(
-            
-            title = "",
-            
-            categoryorder = "array",
-            
-            categoryarray = c(
-              
-              "Desistentes",
-              
-              "Dificuldades no Negócio",
-              
-              "Recuperou o Investimento de 3.000 MZN",
-              
-              "Sucesso no Negócio",
-              
-              "Receberam Grants"
-              
-            )
-            
+        ),
+        
+        
+        # ------------------------------------------------------
+        # FUNDO
+        # ------------------------------------------------------
+        
+        paper_bgcolor = "#f5f3f4",
+        
+        plot_bgcolor = "#f5f3f4",
+        
+        showlegend = FALSE,
+        
+        
+        # ======================================================
+        # EIXO X
+        # ======================================================
+        
+        xaxis = list(
+          
+          title = "Percentagem (%)",
+          
+          range = c(
+            0,
+            100
           ),
           
+          tickmode = "array",
           
-          # ======================================================
-          # MARGENS
-          # ======================================================
+          tickvals = c(
+            0,
+            20,
+            40,
+            60,
+            80,
+            100
+          ),
           
-          margin = list(
+          ticktext = c(
+            "0%",
+            "20%",
+            "40%",
+            "60%",
+            "80%",
+            "100%"
+          ),
+          
+          zeroline = FALSE,
+          
+          showgrid = TRUE
+          
+        ),
+        
+        
+        # ======================================================
+        # EIXO Y
+        # ======================================================
+        
+        yaxis = list(
+          
+          title = "",
+          
+          categoryorder = "array",
+          
+          categoryarray = c(
             
-            l = 280,
             
-            r = 60,
             
-            t = 90,
+            "Dificuldades no Negócio",
             
-            b = 60
+            "Recuperou o Investimento de 3.000 MZN",
+            
+            "Sucesso no Negócio",
+            
+            "Investiram no Negócio",
+            "Desistentes",
+            
+            "Receberam Grants"
             
           )
           
+        ),
+        
+        
+        # ======================================================
+        # MARGENS
+        # ======================================================
+        
+        margin = list(
+          
+          l = 280,
+          
+          r = 60,
+          
+          t = 100,
+          
+          b = 60
+          
         )
+        
+      )
       
     })
 # ============================================================
@@ -6919,97 +6976,97 @@ output$tabela_resultados_grants <- renderDT({
     })
 #   
   # ADMIN
-  # Função principal de atualização
-  atualiza_dados <- function() {
-    tryCatch({
-      # Autenticação com Zoho
-      client_id <- Sys.getenv("CLIENT_ID")
-      client_secret <- Sys.getenv("CLIENT_SECRET")
-      refresh_token <- Sys.getenv("REFRESH_TOKEN")
-      
-      access_token <- RZohoCreator::refresh_access_token(
-        client_id, client_secret, refresh_token
-      )$access_token
-      
-      # ## 1. Presenças Mentoria
-      dados <- RZohoCreator::get_records(
-        "associacaomuva", "monitoria", "PRESENCAS_NEXUS_Report", access_token
-      ) %>%
-        data.frame()
-
-      # Baixar
-      writexl::write_xlsx(dados, path = "Presencas_Nexus_Mentoria.xlsx")
-      
-      # 1. Presenças Coletivas
-      Acompanhamento <- RZohoCreator::get_records(
-        "associacaomuva", "monitoria", "NEXUS_ACOMPANHAMENTO_Report", access_token
-      ) %>%
-        data.frame()
-
-      # Baixar
-      writexl::write_xlsx(Acompanhamento , path = "Acompanhamento_Sessoes_Nexus.xlsx")
-      
-      Qualidade_Mentoria <- RZohoCreator::get_records(
-        "associacaomuva", "monitoria", "Qualidade_Sess_es_Fazer_Prosperar_Report", access_token
-      ) %>%
-        data.frame()
-      
-      # Baixar
-      writexl::write_xlsx(Qualidade_Mentoria, path = "Qualidade_Mentoria.xlsx")
-      
-      return(list(
-         dados = dados,
-         Acompanhamento = Acompanhamento,
-         Qualidade_Mentoria = Qualidade_Mentoria 
-      ))
-    }, error = function(e) {
-      message("Erro ao atualizar dados: ", e$message)
-      return(NULL)
-    })
-  }
-  
-  # Evento ao clicar no botão
-  dados_atualizados <- eventReactive(input$botao_atualizar, {
-    # Criar log da ação
-    log_entry <- data.frame(
-      usuario = "admin",  # como não há mais login, colocar fixo
-      acao = "Atualizou os dados",
-      hora = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
-      stringsAsFactors = FALSE
-    )
-    
-    # Ler e combinar com logs antigos
-    if (file.exists("log_acoes.xlsx")) {
-      log_existente <- readxl::read_excel("log_acoes.xlsx")
-      log_total <- dplyr::bind_rows(log_existente, log_entry)
-    } else {
-      log_total <- log_entry
-    }
-    
-    # Salvar o novo log
-    writexl::write_xlsx(log_total, path = "log_acoes.xlsx")
-    
-    # Rodar atualização
-    atualiza_dados()
-  })
-  
-  # Mensagem de status
-  output$status_atualizacao <- renderText({
-    if (input$botao_atualizar > 0) {
-      if (!is.null(dados_atualizados())) {
-        paste0(
-          "✅ Dados actualizados com sucesso em ",
-          format(Sys.time(), "%d/%m/%Y %H:%M:%S"),
-          ". Por favor, actualize (refresh) a página no navegador para ver as mudanças."
-        )
-      } else {
-        "⚠️ Erro ao actualizar os dados. Verifique o log."
-      }
-    } else {
-      "⏳ Aguardando actualização..."
-    }
-  })
-  
+  # # Função principal de atualização
+  # atualiza_dados <- function() {
+  #   tryCatch({
+  #     # Autenticação com Zoho
+  #     client_id <- Sys.getenv("CLIENT_ID")
+  #     client_secret <- Sys.getenv("CLIENT_SECRET")
+  #     refresh_token <- Sys.getenv("REFRESH_TOKEN")
+  #     
+  #     access_token <- RZohoCreator::refresh_access_token(
+  #       client_id, client_secret, refresh_token
+  #     )$access_token
+  #     
+  #     # ## 1. Presenças Mentoria
+  #     dados <- RZohoCreator::get_records(
+  #       "associacaomuva", "monitoria", "PRESENCAS_NEXUS_Report", access_token
+  #     ) %>%
+  #       data.frame()
+  # 
+  #     # Baixar
+  #     writexl::write_xlsx(dados, path = "Presencas_Nexus_Mentoria.xlsx")
+  #     
+  #     # 1. Presenças Coletivas
+  #     Acompanhamento <- RZohoCreator::get_records(
+  #       "associacaomuva", "monitoria", "NEXUS_ACOMPANHAMENTO_Report", access_token
+  #     ) %>%
+  #       data.frame()
+  # 
+  #     # Baixar
+  #     writexl::write_xlsx(Acompanhamento , path = "Acompanhamento_Sessoes_Nexus.xlsx")
+  #     
+  #     Qualidade_Mentoria <- RZohoCreator::get_records(
+  #       "associacaomuva", "monitoria", "Qualidade_Sess_es_Fazer_Prosperar_Report", access_token
+  #     ) %>%
+  #       data.frame()
+  #     
+  #     # Baixar
+  #     writexl::write_xlsx(Qualidade_Mentoria, path = "Qualidade_Mentoria.xlsx")
+  #     
+  #     return(list(
+  #        dados = dados,
+  #        Acompanhamento = Acompanhamento,
+  #        Qualidade_Mentoria = Qualidade_Mentoria 
+  #     ))
+  #   }, error = function(e) {
+  #     message("Erro ao atualizar dados: ", e$message)
+  #     return(NULL)
+  #   })
+  # }
+  # 
+  # # Evento ao clicar no botão
+  # dados_atualizados <- eventReactive(input$botao_atualizar, {
+  #   # Criar log da ação
+  #   log_entry <- data.frame(
+  #     usuario = "admin",  # como não há mais login, colocar fixo
+  #     acao = "Atualizou os dados",
+  #     hora = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+  #     stringsAsFactors = FALSE
+  #   )
+  #   
+  #   # Ler e combinar com logs antigos
+  #   if (file.exists("log_acoes.xlsx")) {
+  #     log_existente <- readxl::read_excel("log_acoes.xlsx")
+  #     log_total <- dplyr::bind_rows(log_existente, log_entry)
+  #   } else {
+  #     log_total <- log_entry
+  #   }
+  #   
+  #   # Salvar o novo log
+  #   writexl::write_xlsx(log_total, path = "log_acoes.xlsx")
+  #   
+  #   # Rodar atualização
+  #   atualiza_dados()
+  # })
+  # 
+  # # Mensagem de status
+  # output$status_atualizacao <- renderText({
+  #   if (input$botao_atualizar > 0) {
+  #     if (!is.null(dados_atualizados())) {
+  #       paste0(
+  #         "✅ Dados actualizados com sucesso em ",
+  #         format(Sys.time(), "%d/%m/%Y %H:%M:%S"),
+  #         ". Por favor, actualize (refresh) a página no navegador para ver as mudanças."
+  #       )
+  #     } else {
+  #       "⚠️ Erro ao actualizar os dados. Verifique o log."
+  #     }
+  #   } else {
+  #     "⏳ Aguardando actualização..."
+  #   }
+  # })
+  # 
   
 }
 
